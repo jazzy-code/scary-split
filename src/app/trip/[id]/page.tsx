@@ -2,11 +2,7 @@
 
 import { useState } from "react"
 import { useParams } from "next/navigation"
-import { Pencil, Trash2 } from "lucide-react"
-
-import { Share2, Check } from "lucide-react"
-
-import { createShareUrl } from "@/lib/sharing/trip-share"
+import { Trash2, Share2, Check, Ghost, ArrowLeft } from "lucide-react"
 
 import {
   Card,
@@ -16,6 +12,7 @@ import {
 } from "@/components/ui/card"
 
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 
 import {
   AddExpenseDialog,
@@ -23,9 +20,10 @@ import {
 
 import {
   deleteExpense,
-  getTrip,
   saveTrip,
 } from "@/lib/storage/trips"
+
+import { useTrip } from "@/lib/storage/use-trip"
 
 import type {
   Expense,
@@ -68,7 +66,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
+
+import {
+  createShareUrl,
+} from "@/lib/sharing/trip-share"
+import { formatNumber } from "@/lib/utils"
+import Link from "next/link"
 
 
 export default function TripPage() {
@@ -79,17 +82,14 @@ export default function TripPage() {
       ? params.id
       : null
 
-  const [trip, setTrip] = useState<Trip | null>(() => {
-    if (!tripId) {
-      return null
-    }
-
-    return getTrip(tripId)
-  })
+  const trip = useTrip(tripId)
 
   const [expenseToDelete, setExpenseToDelete] =
     useState<Expense | null>(null)
-  const [shareCopied, setShareCopied] = useState(false)
+
+  const [shareCopied, setShareCopied] =
+    useState(false)
+
 
   async function handleShareTrip() {
     if (!trip) {
@@ -107,7 +107,10 @@ export default function TripPage() {
     }, 2000)
   }
 
-  function handleAddExpense(expense: Expense) {
+
+  function handleAddExpense(
+    expense: Expense,
+  ) {
     if (!trip) {
       return
     }
@@ -121,7 +124,6 @@ export default function TripPage() {
     }
 
     saveTrip(updatedTrip)
-    setTrip(updatedTrip)
   }
 
 
@@ -143,7 +145,6 @@ export default function TripPage() {
     }
 
     saveTrip(updatedTrip)
-    setTrip(updatedTrip)
   }
 
 
@@ -152,65 +153,77 @@ export default function TripPage() {
       return
     }
 
-    const updatedTrip = deleteExpense(
+    deleteExpense(
       trip.id,
       expenseToDelete.id,
     )
-
-    if (updatedTrip) {
-      setTrip(updatedTrip)
-    }
 
     setExpenseToDelete(null)
   }
 
 
+  /*
+   * Mientras useSyncExternalStore obtiene
+   * el snapshot del cliente, trip puede ser null.
+   */
   if (!trip) {
     return (
       <main className="flex min-h-screen items-center justify-center px-4">
         <p className="text-muted-foreground">
-          Viaje no encontrado.
+          Sustito no encontrado.
         </p>
       </main>
     )
   }
 
 
-  const totalSpent = trip.expenses.reduce(
-    (total, expense) =>
-      total + expense.amount,
-    0,
-  )
+  const totalSpent =
+    trip.expenses.reduce(
+      (total, expense) =>
+        total + expense.amount,
+      0,
+    )
 
 
-  const balances = calculateBalances(
-    trip.people,
-    trip.expenses,
-  )
+  const balances =
+    calculateBalances(
+      trip.people,
+      trip.expenses,
+    )
 
 
-  const settlements = simplifyDebts(
-    balances,
-  )
+  const settlements =
+    simplifyDebts(balances)
 
 
   return (
-    <main className="min-h-screen px-4 py-8">
-      <div className="mx-auto max-w-3xl">
+    <main className="min-h-screen px-4 py-4 md:py-8 md:px-8">
+      <div className="w-full">
 
         {/* Header */}
 
+        <div className="mb-4">
+          <Button nativeButton={false} variant="ghost" render={<Link href="/" />}>
+            <ArrowLeft className="mr-2 size-4" />
+            Volver
+          </Button>
+        </div>
+
         <div className="mb-8 flex items-start justify-between gap-4">
+
           <div>
-            <p className="text-sm text-muted-foreground">
-              Viaje
-            </p>
+            <div className="flex">
+              <p className="text-md text-muted-foreground">
+                Sustito
+              </p>
+              <Ghost className="ml-1 size-4" />
+            </div>
 
             <h1 className="text-3xl font-bold tracking-tight">
               {trip.name}
             </h1>
-
           </div>
+
 
           <Button
             variant="outline"
@@ -224,10 +237,11 @@ export default function TripPage() {
             ) : (
               <>
                 <Share2 className="mr-2 size-4" />
-                Compartir viaje
+                Compartir sustito
               </>
             )}
           </Button>
+
         </div>
 
 
@@ -236,6 +250,7 @@ export default function TripPage() {
         <div className="grid gap-4 sm:grid-cols-2">
 
           <Card>
+
             <CardHeader>
               <CardTitle>
                 Total gastado
@@ -243,14 +258,18 @@ export default function TripPage() {
             </CardHeader>
 
             <CardContent>
+
               <p className="text-3xl font-bold">
-                ${totalSpent.toFixed(2)}
+                ${formatNumber(totalSpent)}
               </p>
+
             </CardContent>
+
           </Card>
 
 
           <Card>
+
             <CardHeader>
               <CardTitle>
                 Participantes
@@ -258,6 +277,7 @@ export default function TripPage() {
             </CardHeader>
 
             <CardContent className="flex flex-wrap gap-2">
+
               {trip.people.map((person) => (
                 <Badge
                   key={person.id}
@@ -266,252 +286,158 @@ export default function TripPage() {
                   {person.name}
                 </Badge>
               ))}
+
             </CardContent>
+
           </Card>
 
         </div>
 
 
-        {/* Expenses */}
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Expenses Column */}
+          <div className="relative mt-4 min-h-screen md:min-h-[400px]">
+            {/* El Card se pega a los bordes de la columna creada por Expense Summary */}
+            <Card className="absolute inset-0 flex flex-col">
+              <CardHeader className="flex flex-row items-center justify-between shrink-0">
+                <CardTitle>Gastos</CardTitle>
+                <AddExpenseDialog
+                  people={trip.people}
+                  onAdd={handleAddExpense}
+                />
+              </CardHeader>
 
-        <Card className="mt-4">
+              {/* Al tener altura fija dictada por inset-0, el overflow-y-auto SÍ funciona */}
+              <CardContent className="flex-1 overflow-y-auto">
+                {trip.expenses.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <p className="text-muted-foreground">Aún no hay gastos.</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Agrega el primer gasto del sustito.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {trip.expenses.map((expense) => {
+                      const payer = trip.people.find(
+                        (person) => person.id === expense.paidBy
+                      )
 
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>
-              Gastos
-            </CardTitle>
-
-            <AddExpenseDialog
-              people={trip.people}
-              onAdd={handleAddExpense}
-            />
-          </CardHeader>
-
-
-          <CardContent>
-
-            {trip.expenses.length === 0 ? (
-
-              <div className="py-12 text-center">
-
-                <p className="text-muted-foreground">
-                  Aún no hay gastos.
-                </p>
-
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Agrega el primer gasto del viaje.
-                </p>
-
-              </div>
-
-            ) : (
-
-              <div className="space-y-3">
-
-                {trip.expenses.map((expense) => {
-
-                  const payer =
-                    trip.people.find(
-                      (person) =>
-                        person.id ===
-                        expense.paidBy,
-                    )
-
-
-                  return (
-
-                    <Collapsible
-                      key={expense.id}
-                      className="rounded-lg border"
-                    >
-
-                      <CollapsibleTrigger className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50">
-
-                        <div className="min-w-0">
-
-                          <p className="font-medium">
-                            {expense.description}
-                          </p>
-
-                          <p className="text-sm text-muted-foreground">
-                            Pagó{" "}
-                            {payer?.name ??
-                              "Desconocido"}{" "}
-                            ·{" "}
-                            {expense.participants.length}{" "}
-                            {expense.participants.length ===
-                              1
-                              ? "persona"
-                              : "personas"}
-                          </p>
-
-                        </div>
-
-
-                        <p className="ml-4 shrink-0 font-semibold">
-                          ${expense.amount.toFixed(2)}
-                        </p>
-
-                      </CollapsibleTrigger>
-
-
-                      <CollapsibleContent>
-
-                        <div className="border-t px-4 py-4">
-
-                          {/* Basic information */}
-
-                          <div className="mb-4 grid gap-3 sm:grid-cols-2">
-
-                            <div>
-                              <p className="text-xs text-muted-foreground">
-                                Total
-                              </p>
-
-                              <p className="font-semibold">
-                                ${expense.amount.toFixed(2)}
+                      return (
+                        <Collapsible
+                          key={expense.id}
+                          className="rounded-lg border"
+                        >
+                          <CollapsibleTrigger className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50">
+                            <div className="min-w-0">
+                              <p className="font-medium">{expense.description}</p>
+                              <p className="text-sm text-muted-foreground">
+                                Pagó {payer?.name ?? "Desconocido"} {" · "}
+                                {expense.participants.length}{" "}
+                                {expense.participants.length === 1
+                                  ? "persona"
+                                  : "personas"}
                               </p>
                             </div>
 
-
-                            <div>
-                              <p className="text-xs text-muted-foreground">
-                                Pagó
-                              </p>
-
-                              <p className="font-semibold">
-                                {payer?.name ??
-                                  "Desconocido"}
-                              </p>
-                            </div>
-
-                          </div>
-
-
-                          {/* Participants */}
-
-                          <div>
-
-                            <p className="mb-3 text-sm font-medium">
-                              Dividido entre
+                            <p className="ml-4 shrink-0 font-semibold">
+                              ${formatNumber(expense.amount)}
                             </p>
+                          </CollapsibleTrigger>
 
+                          <CollapsibleContent>
+                            <div className="border-t px-4 py-4">
+                              {/* Basic information */}
+                              <div className="mb-4 grid gap-3 sm:grid-cols-2">
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Total</p>
+                                  <p className="font-semibold">
+                                    ${formatNumber(expense.amount)}
+                                  </p>
+                                </div>
 
-                            <div className="space-y-2">
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Pagó</p>
+                                  <p className="font-semibold">
+                                    {payer?.name ?? "Desconocido"}
+                                  </p>
+                                </div>
+                              </div>
 
-                              {expense.participants.map(
-                                (participant) => {
+                              {/* Participants */}
+                              <div>
+                                <p className="mb-3 text-sm font-medium">
+                                  Dividido entre
+                                </p>
 
-                                  const person =
-                                    trip.people.find(
-                                      (person) =>
-                                        person.id ===
-                                        participant.personId,
+                                <div className="space-y-2">
+                                  {expense.participants.map((participant) => {
+                                    const person = trip.people.find(
+                                      (person) => person.id === participant.personId
                                     )
 
+                                    return (
+                                      <div
+                                        key={participant.personId}
+                                        className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2"
+                                      >
+                                        <span className="text-sm">
+                                          {person?.name ?? "Desconocido"}
+                                        </span>
+                                        <span className="text-sm font-medium">
+                                          ${formatNumber(participant.amount)}
+                                        </span>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              </div>
 
-                                  return (
+                              {/* Actions */}
+                              <div className="mt-4 flex justify-end gap-2">
+                                <AddExpenseDialog
+                                  people={trip.people}
+                                  expense={expense}
+                                  onAdd={() => { }}
+                                  onUpdate={handleUpdateExpense}
+                                />
 
-                                    <div
-                                      key={
-                                        participant.personId
-                                      }
-                                      className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2"
-                                    >
-
-                                      <span className="text-sm">
-                                        {person?.name ??
-                                          "Desconocido"}
-                                      </span>
-
-                                      <span className="text-sm font-medium">
-                                        $
-                                        {participant.amount.toFixed(
-                                          2,
-                                        )}
-                                      </span>
-
-                                    </div>
-
-                                  )
-                                },
-                              )}
-
+                                <button
+                                  type="button"
+                                  onClick={() => setExpenseToDelete(expense)}
+                                  className="inline-flex h-8 items-center gap-2 rounded-md border border-destructive/30 px-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="size-4" />
+                                  Eliminar
+                                </button>
+                              </div>
                             </div>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      )
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-                          </div>
-
-
-                          {/* Actions */}
-
-                          <div className="mt-4 flex justify-end gap-2">
-
-                            <AddExpenseDialog
-                              people={trip.people}
-                              expense={expense}
-                              onAdd={() => { }}
-                              onUpdate={
-                                handleUpdateExpense
-                              }
-                            />
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setExpenseToDelete(
-                                  expense,
-                                )
-                              }
-                              className="inline-flex h-9 items-center gap-2 rounded-md border border-destructive/30 px-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
-                            >
-                              <Trash2 className="size-4" />
-                              Eliminar
-                            </button>
-
-                          </div>
-
-                        </div>
-
-                      </CollapsibleContent>
-
-                    </Collapsible>
-
-                  )
-                })}
-
-              </div>
-
-            )}
-
-          </CardContent>
-
-        </Card>
-
-
-        {/* Expense Summary */}
-
-        <div className="mt-4">
-
-          <Card>
-
-            <CardHeader>
-              <CardTitle>
-                Resumen de gastos
-              </CardTitle>
-            </CardHeader>
-
-            <CardContent>
-
-              <ExpenseSummary
-                people={trip.people}
-                expenses={trip.expenses}
-              />
-
-            </CardContent>
-
-          </Card>
-
+          {/* Expense Summary Column */}
+          <div className="mt-4 min-h-[400px]">
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle>Resumen de gastos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ExpenseSummary
+                  people={trip.people}
+                  expenses={trip.expenses}
+                />
+              </CardContent>
+            </Card>
+          </div>
         </div>
+
 
 
         {/* Balances & Settlements */}
@@ -582,9 +508,11 @@ export default function TripPage() {
             </AlertDialogTitle>
 
             <AlertDialogDescription>
+
               {expenseToDelete
-                ? `Se eliminará "${expenseToDelete.description}" por $${expenseToDelete.amount.toFixed(2)}. Esta acción no se puede deshacer.`
+                ? `Se eliminará "${expenseToDelete.description}" por $${formatNumber(expenseToDelete.amount)}. Esta acción no se puede deshacer.`
                 : "Esta acción no se puede deshacer."}
+
             </AlertDialogDescription>
 
           </AlertDialogHeader>

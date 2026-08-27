@@ -4,6 +4,7 @@ import type {
   Person,
   Settlement,
 } from "@/lib/expenses/types"
+import { formatNumber } from "@/lib/utils"
 
 type SettlementListProps = {
   people: Person[]
@@ -55,7 +56,7 @@ export function SettlementList({
           </div>
 
           <p className="font-semibold">
-            ${settlement.amount.toFixed(2)}
+            ${formatNumber(settlement.amount)}
           </p>
         </div>
       ))}

@@ -1,5 +1,6 @@
 import { roundMoney } from "@/lib/money/round"
 import type { ExpenseParticipant } from "./types"
+import { formatNumber } from "../utils"
 
 export function splitCustom(
   amount: number,
@@ -50,9 +51,7 @@ export function splitCustom(
 
   if (participantsTotal !== total) {
     throw new Error(
-      `Las cantidades de los participantes ($${participantsTotal.toFixed(
-        2,
-      )}) no coinciden con el total del gasto ($${total.toFixed(2)})`,
+      `Las cantidades de los participantes ($${formatNumber(participantsTotal)}}) no coinciden con el total del gasto ($${formatNumber(total)})`,
     )
   }
 

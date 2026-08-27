@@ -1,6 +1,7 @@
 "use client"
 
 import type { Balance, Person } from "@/lib/expenses/types"
+import { formatNumber } from "@/lib/utils"
 
 type BalanceSummaryProps = {
   people: Person[]
@@ -46,7 +47,7 @@ export function BalanceSummary({
 
             <p className="font-semibold">
               {isPositive && "+"}
-              ${Math.abs(balance.amount).toFixed(2)}
+              ${formatNumber(Math.abs(balance.amount))}
             </p>
           </div>
         )

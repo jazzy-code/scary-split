@@ -37,7 +37,7 @@ export default function ImportPage() {
 
     if (!input) {
       setError(
-        "Pega el enlace o JSON del viaje.",
+        "Pega el enlace o JSON del sustito.",
       )
 
       return
@@ -97,7 +97,7 @@ export default function ImportPage() {
 
     if (!trip) {
       setError(
-        "El viaje no es válido. Verifica que hayas copiado correctamente el enlace o JSON.",
+        "El sustito no es válido. Verifica que hayas copiado correctamente el enlace o JSON.",
       )
 
       return
@@ -121,7 +121,7 @@ export default function ImportPage() {
           </p>
 
           <h1 className="text-3xl font-bold tracking-tight">
-            Importar viaje
+            Importar sustito
           </h1>
 
           <p className="mt-2 text-muted-foreground">
@@ -136,7 +136,7 @@ export default function ImportPage() {
 
           <CardHeader>
             <CardTitle>
-              Datos del viaje
+              Datos del sustito
             </CardTitle>
           </CardHeader>
 
@@ -175,7 +175,7 @@ export default function ImportPage() {
               className="w-full"
               onClick={handleImport}
             >
-              Importar viaje
+              Importar sustito
             </Button>
 
 

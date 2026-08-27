@@ -1,6 +1,7 @@
 "use client"
 
 import type { Expense, Person } from "@/lib/expenses/types"
+import { formatNumber } from "@/lib/utils"
 
 type ExpenseSummaryProps = {
   people: Person[]
@@ -61,7 +62,7 @@ export function ExpenseSummary({
                 </p>
 
                 <p className="font-semibold">
-                  ${spent.toFixed(2)}
+                  ${formatNumber(spent)}
                 </p>
               </div>
 
@@ -71,7 +72,7 @@ export function ExpenseSummary({
                 </p>
 
                 <p className="font-semibold">
-                  ${owed.toFixed(2)}
+                  ${formatNumber(owed)}
                 </p>
               </div>
 
@@ -90,7 +91,7 @@ export function ExpenseSummary({
                   }
                 >
                   {balance > 0 && "+"}
-                  ${balance.toFixed(2)}
+                  ${formatNumber(balance)}
                 </p>
               </div>
             </div>
