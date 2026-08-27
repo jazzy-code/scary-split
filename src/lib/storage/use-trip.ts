@@ -9,39 +9,43 @@ import {
 
 import type { Trip } from "@/lib/expenses/types"
 
-
 const snapshots = new Map<
   string,
   Trip | null
 >()
 
-
 function subscribe(
   callback: () => void,
 ) {
+  function handleChange() {
+    // Invalidamos los snapshots anteriores.
+    snapshots.clear()
+
+    callback()
+  }
+
   window.addEventListener(
     TRIPS_CHANGED_EVENT,
-    callback,
+    handleChange,
   )
 
   window.addEventListener(
     "storage",
-    callback,
+    handleChange,
   )
 
   return () => {
     window.removeEventListener(
       TRIPS_CHANGED_EVENT,
-      callback,
+      handleChange,
     )
 
     window.removeEventListener(
       "storage",
-      callback,
+      handleChange,
     )
   }
 }
-
 
 function getSnapshot(
   tripId: string | null,
@@ -60,11 +64,11 @@ function getSnapshot(
   return snapshots.get(tripId) ?? null
 }
 
+const SERVER_SNAPSHOT: Trip | null = null
 
 function getServerSnapshot(): Trip | null {
-  return null
+  return SERVER_SNAPSHOT
 }
-
 
 export function useTrip(
   tripId: string | null,
