@@ -72,6 +72,7 @@ import {
 } from "@/lib/sharing/trip-share"
 import { formatNumber } from "@/lib/utils"
 import Link from "next/link"
+import Image from "next/image"
 
 
 export default function TripPage() {
@@ -212,16 +213,22 @@ export default function TripPage() {
         <div className="mb-8 flex items-start justify-between gap-4">
 
           <div>
-            <div className="flex">
-              <p className="text-md text-muted-foreground">
+            <p className="text-md text-muted-foreground ml-1">
                 Sustito
               </p>
-              <Ghost className="ml-1 size-4" />
-            </div>
+            <div className="flex items-center">
+              <Image
+                src="/scary-split-logo.png"
+                alt="Logo"
+                width={40}
+                height={40}
+              />
 
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-3xl font-bold tracking-tight ml-1">
               {trip.name}
             </h1>
+            </div>
+
           </div>
 
 

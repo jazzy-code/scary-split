@@ -21,6 +21,8 @@ import {
 import {
   saveTrip,
 } from "@/lib/storage/trips"
+import { ArrowLeft } from "lucide-react"
+import Link from "next/link"
 
 
 export default function ImportPage() {
@@ -113,6 +115,13 @@ export default function ImportPage() {
   return (
     <main className="min-h-screen px-4 py-12">
       <div className="mx-auto max-w-2xl">
+
+        <div className="mb-4">
+          <Button nativeButton={false} variant="ghost" render={<Link href="/" />}>
+            <ArrowLeft className="mr-2 size-4" />
+            Volver
+          </Button>
+        </div>
 
         <div className="mb-8">
 

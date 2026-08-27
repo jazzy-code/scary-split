@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import {
   ArrowRight,
   Trash2,
+  Upload,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -27,6 +28,7 @@ import {
 import type { Trip } from "@/lib/expenses/types"
 import { useTrips } from "@/lib/storage/use-trips"
 import { formatNumber } from "@/lib/utils"
+import Image from "next/image"
 
 
 export default function HomePage() {
@@ -111,7 +113,7 @@ export default function HomePage() {
   ) {
     const confirmed =
       window.confirm(
-        `¿Eliminar el viaje "${trip.name}"? Esta acción no se puede deshacer.`,
+        `¿Eliminar el sustito "${trip.name}"? Esta acción no se puede deshacer.`,
       )
 
     if (!confirmed) {
@@ -140,12 +142,20 @@ export default function HomePage() {
         {/* Header */}
 
         <div className="mb-8">
-          <h1 className="text-4xl font-bold tracking-tight">
-            Scary Split
-          </h1>
+          <div className="flex items-center gap-2">
+            <Image
+              src="/scary-split-logo.png"
+              alt="Logo"
+              width={70}
+              height={70}
+            />
+            <h1 className="text-4xl font-bold tracking-tight">
+              Scary Split
+            </h1>
+          </div>
 
           <p className="mt-2 text-muted-foreground">
-            Divide los gastos de tu viaje
+            Divide los gastos de tu sustito
             sin complicarte.
           </p>
         </div>
@@ -157,7 +167,7 @@ export default function HomePage() {
 
           <CardHeader>
             <CardTitle>
-              Crear viaje
+              Crear sustito
             </CardTitle>
           </CardHeader>
 
@@ -167,7 +177,7 @@ export default function HomePage() {
             <div className="space-y-2">
 
               <Label htmlFor="trip-name">
-                Nombre del viaje
+                Nombre del sustito
               </Label>
 
               <Input
@@ -270,11 +280,37 @@ export default function HomePage() {
                 handleCreateTrip
               }
             >
-              Crear viaje
+              Crear sustito
             </Button>
 
           </CardContent>
 
+        </Card>
+
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle>
+              ¿Ya tienes un sustito?
+            </CardTitle>
+          </CardHeader>
+
+          <CardContent>
+            <p className="mb-4 text-sm text-muted-foreground">
+              Importa un sustito que alguien haya
+              compartido contigo.
+            </p>
+
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() =>
+                router.push("/import")
+              }
+            >
+              <Upload className="mr-2 size-4" />
+              Importar sustito
+            </Button>
+          </CardContent>
         </Card>
 
 
@@ -285,11 +321,11 @@ export default function HomePage() {
           <div className="mb-4">
 
             <h2 className="text-xl font-semibold">
-              Mis viajes
+              Mis sustitos
             </h2>
 
             <p className="text-sm text-muted-foreground">
-              Viajes guardados en este
+              Sustitos guardados en este
               navegador.
             </p>
 
@@ -303,11 +339,11 @@ export default function HomePage() {
               <CardContent className="py-10 text-center">
 
                 <p className="text-muted-foreground">
-                  No tienes viajes guardados.
+                  No tienes sustitos guardados.
                 </p>
 
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Crea tu primer viaje
+                  Crea tu primer sustito
                   arriba.
                 </p>
 
