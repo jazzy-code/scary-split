@@ -9,9 +9,9 @@ import {
 
 import type { Trip } from "@/lib/expenses/types"
 
+const EMPTY_TRIPS: Trip[] = []
 
 let snapshot: Trip[] = []
-
 
 function getSnapshot(): Trip[] {
   const trips = getTrips()
@@ -26,11 +26,9 @@ function getSnapshot(): Trip[] {
   return snapshot
 }
 
-
 function getServerSnapshot(): Trip[] {
-  return []
+  return EMPTY_TRIPS
 }
-
 
 function subscribe(
   callback: () => void,
@@ -62,7 +60,6 @@ function subscribe(
     )
   }
 }
-
 
 export function useTrips(): Trip[] {
   return useSyncExternalStore(

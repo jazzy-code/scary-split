@@ -1,32 +1,12 @@
 import type { Trip } from "@/lib/expenses/types"
-
-function encodeBase64(value: string): string {
-  return btoa(
-    encodeURIComponent(value).replace(
-      /%([0-9A-F]{2})/g,
-      (_, p1) =>
-        String.fromCharCode(
-          Number.parseInt(p1, 16),
-        ),
-    ),
-  )
-}
-
-function decodeBase64(value: string): string {
-  return decodeURIComponent(
-    Array.from(
-      atob(value),
-      (character) =>
-        `%${character.charCodeAt(0)
-          .toString(16)
-          .padStart(2, "0")}`,
-    ).join(""),
-  )
-}
+import {
+  compressToEncodedURIComponent,
+  decompressFromEncodedURIComponent,
+} from "lz-string"
 
 
 export function encodeTrip(trip: Trip): string {
-  return encodeBase64(
+  return compressToEncodedURIComponent(
     JSON.stringify(trip),
   )
 }
@@ -36,7 +16,14 @@ export function decodeTrip(
   encodedTrip: string,
 ): Trip | null {
   try {
-    const decoded = decodeBase64(encodedTrip)
+    const decoded =
+      decompressFromEncodedURIComponent(
+        encodedTrip,
+      )
+
+    if (!decoded) {
+      return null
+    }
 
     const trip = JSON.parse(decoded) as Trip
 
