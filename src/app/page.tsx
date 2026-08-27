@@ -136,8 +136,8 @@ export default function HomePage() {
 
 
   return (
-    <main className="min-h-screen px-4 py-12">
-      <div className="mx-auto max-w-xl">
+    <main className="min-h-screen px-4 py-4 md:py-12">
+      <div className="mx-auto max-w-3xl">
 
         {/* Header */}
 
@@ -163,155 +163,158 @@ export default function HomePage() {
 
         {/* Create trip */}
 
-        <Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="md:col-span-2">
 
-          <CardHeader>
-            <CardTitle>
-              Crear sustito
-            </CardTitle>
-          </CardHeader>
-
-
-          <CardContent className="space-y-6">
-
-            <div className="space-y-2">
-
-              <Label htmlFor="trip-name">
-                Nombre del sustito
-              </Label>
-
-              <Input
-                id="trip-name"
-                placeholder="Puerto Vallarta 2026"
-                value={tripName}
-                onChange={(event) =>
-                  setTripName(
-                    event.target.value,
-                  )
-                }
-              />
-
-            </div>
+            <CardHeader>
+              <CardTitle>
+                Crear sustito
+              </CardTitle>
+            </CardHeader>
 
 
-            <div className="space-y-2">
+            <CardContent className="space-y-6">
 
-              <Label htmlFor="person">
-                Participantes
-              </Label>
+              <div className="space-y-2">
 
-              <div className="flex gap-2">
+                <Label htmlFor="trip-name">
+                  Nombre del sustito
+                </Label>
 
                 <Input
-                  id="person"
-                  placeholder="Nombre"
-                  value={personName}
+                  id="trip-name"
+                  placeholder="Puerto Vallarta 2026"
+                  value={tripName}
                   onChange={(event) =>
-                    setPersonName(
+                    setTripName(
                       event.target.value,
                     )
                   }
-                  onKeyDown={(event) => {
-                    if (
-                      event.key ===
-                      "Enter"
-                    ) {
-                      event.preventDefault()
-                      addPerson()
-                    }
-                  }}
                 />
 
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={addPerson}
-                >
-                  Agregar
-                </Button>
-
               </div>
 
-            </div>
 
-
-            {people.length > 0 && (
               <div className="space-y-2">
 
-                {people.map(
-                  (person) => (
-                    <div
-                      key={person}
-                      className="flex items-center justify-between rounded-lg border px-3 py-2"
-                    >
+                <Label htmlFor="person">
+                  Participantes
+                </Label>
 
-                      <span>
-                        {person}
-                      </span>
+                <div className="flex gap-2">
 
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          removePerson(
-                            person,
-                          )
-                        }
-                      >
-                        Eliminar
-                      </Button>
+                  <Input
+                    id="person"
+                    placeholder="Nombre"
+                    value={personName}
+                    onChange={(event) =>
+                      setPersonName(
+                        event.target.value,
+                      )
+                    }
+                    onKeyDown={(event) => {
+                      if (
+                        event.key ===
+                        "Enter"
+                      ) {
+                        event.preventDefault()
+                        addPerson()
+                      }
+                    }}
+                  />
 
-                    </div>
-                  ),
-                )}
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={addPerson}
+                  >
+                    Agregar
+                  </Button>
+
+                </div>
 
               </div>
-            )}
 
 
-            <Button
-              className="w-full"
-              disabled={
-                !tripName.trim() ||
-                people.length < 2
-              }
-              onClick={
-                handleCreateTrip
-              }
-            >
-              Crear sustito
-            </Button>
+              {people.length > 0 && (
+                <div className="space-y-2">
 
-          </CardContent>
+                  {people.map(
+                    (person) => (
+                      <div
+                        key={person}
+                        className="flex items-center justify-between rounded-lg border px-3 py-2"
+                      >
 
-        </Card>
+                        <span>
+                          {person}
+                        </span>
 
-        <Card className="mt-4">
-          <CardHeader>
-            <CardTitle>
-              ¿Ya tienes un sustito?
-            </CardTitle>
-          </CardHeader>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            removePerson(
+                              person,
+                            )
+                          }
+                        >
+                          Eliminar
+                        </Button>
 
-          <CardContent>
-            <p className="mb-4 text-sm text-muted-foreground">
-              Importa un sustito que alguien haya
-              compartido contigo.
-            </p>
+                      </div>
+                    ),
+                  )}
 
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() =>
-                router.push("/import")
-              }
-            >
-              <Upload className="mr-2 size-4" />
-              Importar sustito
-            </Button>
-          </CardContent>
-        </Card>
+                </div>
+              )}
+
+
+              <Button
+                className="w-full"
+                disabled={
+                  !tripName.trim() ||
+                  people.length < 2
+                }
+                onClick={
+                  handleCreateTrip
+                }
+              >
+                Crear sustito
+              </Button>
+
+            </CardContent>
+
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                ¿Ya tienes un sustito?
+              </CardTitle>
+            </CardHeader>
+
+            <CardContent>
+              <p className="mb-4 text-sm text-muted-foreground">
+                Importa un sustito que alguien haya
+                compartido contigo.
+              </p>
+
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() =>
+                  router.push("/import")
+                }
+              >
+                <Upload className="mr-2 size-4" />
+                Importar sustito
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
 
 
         {/* Saved trips */}
