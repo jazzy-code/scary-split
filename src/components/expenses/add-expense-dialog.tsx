@@ -7,7 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogTrigger
 } from "@/components/ui/dialog"
 
 import { Button } from "@/components/ui/button"
@@ -15,10 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 
-import type {
-  Expense,
-  Person,
-} from "@/lib/expenses/types"
+import type { Expense, Person } from "@/lib/expenses/types"
 
 import { splitEqually } from "@/lib/expenses/split-equally"
 import { splitCustom } from "@/lib/expenses/split-custom"
@@ -32,12 +29,7 @@ type AddExpenseDialogProps = {
   onUpdate?: (expense: Expense) => void
 }
 
-export function AddExpenseDialog({
-  people,
-  onAdd,
-  expense,
-  onUpdate,
-}: AddExpenseDialogProps) {
+export function AddExpenseDialog({ people, onAdd, expense, onUpdate }: AddExpenseDialogProps) {
   const [open, setOpen] = useState(false)
 
   const [description, setDescription] = useState("")
@@ -46,36 +38,24 @@ export function AddExpenseDialog({
 
   const [selectedPeople, setSelectedPeople] = useState<string[]>([])
 
-  const [splitMode, setSplitMode] = useState<
-    "equal" | "custom"
-  >("equal")
+  const [splitMode, setSplitMode] = useState<"equal" | "custom">("equal")
 
-  const [customAmounts, setCustomAmounts] = useState<
-    Record<string, string>
-  >({})
+  const [customAmounts, setCustomAmounts] = useState<Record<string, string>>({})
 
   const numericAmount = Number(amount)
 
   const equalSplit = useMemo(() => {
-    if (
-      !numericAmount ||
-      selectedPeople.length === 0
-    ) {
+    if (!numericAmount || selectedPeople.length === 0) {
       return []
     }
 
-    return splitEqually(
-      numericAmount,
-      selectedPeople,
-    )
+    return splitEqually(numericAmount, selectedPeople)
   }, [numericAmount, selectedPeople])
 
   function togglePerson(personId: string) {
     setSelectedPeople((current) => {
       if (current.includes(personId)) {
-        return current.filter(
-          (id) => id !== personId,
-        )
+        return current.filter((id) => id !== personId)
       }
 
       return [...current, personId]
@@ -87,23 +67,16 @@ export function AddExpenseDialog({
     setAmount(expense.amount.toString())
     setPaidBy(expense.paidBy)
 
-    setSelectedPeople(
-      expense.participants.map(
-        (participant) => participant.personId,
-      ),
-    )
+    setSelectedPeople(expense.participants.map((participant) => participant.personId))
 
     const customValues: Record<string, string> = {}
 
-    expense.participants.forEach(
-      (participant) => {
-        customValues[participant.personId] =
-          participant.amount.toString()
-      },
-    )
+    expense.participants.forEach((participant) => {
+      customValues[participant.personId] = participant.amount.toString()
+    })
 
     setCustomAmounts(customValues)
-    setSplitMode("custom")
+    setSplitMode(expense.splitType)
   }
 
   function resetForm() {
@@ -116,12 +89,7 @@ export function AddExpenseDialog({
   }
 
   function handleSubmit() {
-    if (
-      !description.trim() ||
-      numericAmount <= 0 ||
-      !paidBy ||
-      selectedPeople.length === 0
-    ) {
+    if (!description.trim() || numericAmount <= 0 || !paidBy || selectedPeople.length === 0) {
       return
     }
 
@@ -130,20 +98,13 @@ export function AddExpenseDialog({
     if (splitMode === "equal") {
       participants = equalSplit
     } else {
-      participants = selectedPeople.map(
-        (personId) => ({
-          personId,
-          amount: Number(
-            customAmounts[personId] ?? 0,
-          ),
-        }),
-      )
+      participants = selectedPeople.map((personId) => ({
+        personId,
+        amount: Number(customAmounts[personId] ?? 0)
+      }))
 
       try {
-        participants = splitCustom(
-          numericAmount,
-          participants,
-        )
+        participants = splitCustom(numericAmount, participants)
       } catch {
         return
       }
@@ -154,7 +115,8 @@ export function AddExpenseDialog({
       description: description.trim(),
       amount: numericAmount,
       paidBy,
-      participants,
+      splitType: splitMode,
+      participants
     }
 
     if (expense) {
@@ -181,9 +143,7 @@ export function AddExpenseDialog({
       <DialogTrigger
         render={
           <Button
-            variant={
-              expense ? "outline" : "default"
-            }
+            variant={expense ? "outline" : "default"}
             onClick={() => {
               if (expense) {
                 loadExpense(expense)
@@ -192,19 +152,22 @@ export function AddExpenseDialog({
           />
         }
       >
-        {expense ? (<div className="flex items-center gap-2"><Pencil />Editar</div>) : "+ Agregar gasto"}
+        {expense ? (
+          <div className="flex items-center gap-2">
+            <Pencil />
+            Editar
+          </div>
+        ) : (
+          "+ Agregar gasto"
+        )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-lg flex flex-col">
+      <DialogContent className="flex flex-col sm:max-w-lg">
         <DialogHeader className="shrink-0">
-          <DialogTitle>
-            {expense
-              ? "Editar gasto"
-              : "Agregar gasto"}
-          </DialogTitle>
+          <DialogTitle>{expense ? "Editar gasto" : "Agregar gasto"}</DialogTitle>
         </DialogHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar">
+        <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
           <div className="space-y-5">
             <div className="space-y-2">
               <Label>Concepto</Label>
@@ -212,9 +175,7 @@ export function AddExpenseDialog({
               <Input
                 placeholder="Cena"
                 value={description}
-                onChange={(event) =>
-                  setDescription(event.target.value)
-                }
+                onChange={(event) => setDescription(event.target.value)}
               />
             </div>
 
@@ -227,9 +188,7 @@ export function AddExpenseDialog({
                 step="0.01"
                 placeholder="0.00"
                 value={amount}
-                onChange={(event) =>
-                  setAmount(event.target.value)
-                }
+                onChange={(event) => setAmount(event.target.value)}
               />
             </div>
 
@@ -239,19 +198,12 @@ export function AddExpenseDialog({
               <select
                 className="h-10 w-full rounded-md border bg-background px-3"
                 value={paidBy}
-                onChange={(event) =>
-                  setPaidBy(event.target.value)
-                }
+                onChange={(event) => setPaidBy(event.target.value)}
               >
-                <option value="">
-                  Selecciona una persona
-                </option>
+                <option value="">Selecciona una persona</option>
 
                 {people.map((person) => (
-                  <option
-                    key={person.id}
-                    value={person.id}
-                  >
+                  <option key={person.id} value={person.id}>
                     {person.name}
                   </option>
                 ))}
@@ -259,23 +211,14 @@ export function AddExpenseDialog({
             </div>
 
             <div className="space-y-3">
-              <Label>
-                ¿Quiénes participan?
-              </Label>
+              <Label>¿Quiénes participan?</Label>
 
               <div className="space-y-2">
                 {people.map((person) => (
-                  <label
-                    key={person.id}
-                    className="flex cursor-pointer items-center gap-3"
-                  >
+                  <label key={person.id} className="flex cursor-pointer items-center gap-3">
                     <Checkbox
-                      checked={selectedPeople.includes(
-                        person.id,
-                      )}
-                      onCheckedChange={() =>
-                        togglePerson(person.id)
-                      }
+                      checked={selectedPeople.includes(person.id)}
+                      onCheckedChange={() => togglePerson(person.id)}
                     />
 
                     <span>{person.name}</span>
@@ -291,28 +234,16 @@ export function AddExpenseDialog({
                 <div className="flex gap-2">
                   <Button
                     type="button"
-                    variant={
-                      splitMode === "equal"
-                        ? "default"
-                        : "outline"
-                    }
-                    onClick={() =>
-                      setSplitMode("equal")
-                    }
+                    variant={splitMode === "equal" ? "default" : "outline"}
+                    onClick={() => setSplitMode("equal")}
                   >
                     Equitativa
                   </Button>
 
                   <Button
                     type="button"
-                    variant={
-                      splitMode === "custom"
-                        ? "default"
-                        : "outline"
-                    }
-                    onClick={() =>
-                      setSplitMode("custom")
-                    }
+                    variant={splitMode === "custom" ? "default" : "outline"}
+                    onClick={() => setSplitMode("custom")}
                   >
                     Personalizada
                   </Button>
@@ -320,53 +251,32 @@ export function AddExpenseDialog({
               </div>
             )}
 
-            {splitMode === "equal" &&
-              equalSplit.length > 0 && (
-                <div className="rounded-lg border p-3">
-                  <p className="mb-2 text-sm font-medium">
-                    Cada persona paga:
-                  </p>
+            {splitMode === "equal" && equalSplit.length > 0 && (
+              <div className="rounded-lg border p-3">
+                <p className="mb-2 text-sm font-medium">Cada persona paga:</p>
 
-                  {equalSplit.map((item) => {
-                    const person = people.find(
-                      (person) =>
-                        person.id === item.personId,
-                    )
+                {equalSplit.map((item) => {
+                  const person = people.find((person) => person.id === item.personId)
 
-                    return (
-                      <div
-                        key={item.personId}
-                        className="flex justify-between text-sm"
-                      >
-                        <span>
-                          {person?.name}
-                        </span>
+                  return (
+                    <div key={item.personId} className="flex justify-between text-sm">
+                      <span>{person?.name}</span>
 
-                        <span>
-                          ${formatNumber(item.amount)}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
+                      <span>${formatNumber(item.amount)}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
 
             {splitMode === "custom" && (
               <div className="space-y-3 rounded-lg border p-3">
                 {selectedPeople.map((personId) => {
-                  const person = people.find(
-                    (person) =>
-                      person.id === personId,
-                  )
+                  const person = people.find((person) => person.id === personId)
 
                   return (
-                    <div
-                      key={personId}
-                      className="flex items-center gap-3"
-                    >
-                      <span className="flex-1">
-                        {person?.name}
-                      </span>
+                    <div key={personId} className="flex items-center gap-3">
+                      <span className="flex-1">{person?.name}</span>
 
                       <Input
                         className="w-32"
@@ -374,18 +284,12 @@ export function AddExpenseDialog({
                         min="0"
                         step="0.01"
                         placeholder="0.00"
-                        value={
-                          customAmounts[personId] ??
-                          ""
-                        }
+                        value={customAmounts[personId] ?? ""}
                         onChange={(event) =>
-                          setCustomAmounts(
-                            (current) => ({
-                              ...current,
-                              [personId]:
-                                event.target.value,
-                            }),
-                          )
+                          setCustomAmounts((current) => ({
+                            ...current,
+                            [personId]: event.target.value
+                          }))
                         }
                       />
                     </div>
@@ -394,13 +298,8 @@ export function AddExpenseDialog({
               </div>
             )}
 
-            <Button
-              className="w-full"
-              onClick={handleSubmit}
-            >
-              {expense
-                ? "Guardar cambios"
-                : "Agregar gasto"}
+            <Button className="w-full" onClick={handleSubmit}>
+              {expense ? "Guardar cambios" : "Agregar gasto"}
             </Button>
           </div>
         </div>

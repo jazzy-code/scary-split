@@ -1,0 +1,152 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ExpenseSplitType {
+  EQUAL
+  CUSTOM
+}
+
+model User {
+  id            String       @id
+  name          String
+  email         String
+  emailVerified Boolean      @default(false)
+  image         String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  tripMembers   TripMember[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model Trip {
+  id          String       @id @default(cuid())
+  name        String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  members     TripMember[]
+  people      Person[]
+  expenses    Expense[]
+
+  @@map("trip")
+}
+
+model TripMember {
+  id        String   @id @default(cuid())
+  tripId    String
+  userId    String
+  createdAt DateTime @default(now())
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, userId])
+  @@index([userId])
+  @@map("trip_member")
+}
+
+model Person {
+  id             String                @id @default(cuid())
+  name           String
+  tripId         String
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  trip           Trip                  @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  paidExpenses   Expense[]             @relation("ExpensePayer")
+  participations ExpenseParticipant[]
+
+  @@index([tripId])
+  @@map("person")
+}
+
+model Expense {
+  id           String                @id @default(cuid())
+  description  String
+  amount       Decimal               @db.Decimal(12, 2)
+  splitType    ExpenseSplitType
+  tripId       String
+  paidById     String
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  trip         Trip                  @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  paidBy       Person                @relation("ExpensePayer", fields: [paidById], references: [id])
+  participants ExpenseParticipant[]
+
+  @@index([tripId])
+  @@index([paidById])
+  @@map("expense")
+}
+
+model ExpenseParticipant {
+  id        String   @id @default(cuid())
+  expenseId String
+  personId  String
+  amount    Decimal  @db.Decimal(12, 2)
+  expense   Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@unique([expenseId, personId])
+  @@index([personId])
+  @@map("expense_participant")
+}

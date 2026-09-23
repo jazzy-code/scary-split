@@ -13,6 +13,7 @@ export type Expense = {
   description: string
   amount: number
   paidBy: string
+  splitType: "equal" | "custom"
   participants: ExpenseParticipant[]
 }
 
