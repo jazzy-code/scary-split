@@ -49,8 +49,8 @@ export function ExpenseSummary({
             key={person.id}
             className="rounded-lg border p-4"
           >
-            <div className="mb-3 text-base">
-              <p className="font-medium">
+            <div className="mb-2 text-base">
+              <p className="font-medium text-sm">
                 {person.name}
               </p>
             </div>

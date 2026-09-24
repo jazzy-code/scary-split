@@ -35,7 +35,7 @@ export const createTripSchema = z.object({
 export const saveTripSchema = z.object({
   id: z.string().min(1, "El identificador del sustito es requerido"),
   name: z.string().trim().min(1, "El nombre del sustito es requerido").max(100, "El nombre del sustito es demasiado largo"),
-  people: z.array(personSchema).min(2, "El sustito debe tener al menos dos participantes"),
+  people: z.array(personSchema),
   expenses: z.array(expenseSchema)
 })
 

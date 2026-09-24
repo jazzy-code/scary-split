@@ -15,6 +15,7 @@ import { createTripSchema } from "@/features/trips/validations"
 import { authClient } from "@/lib/auth-client"
 import type { Trip } from "@/lib/expenses/types"
 import { formatNumber } from "@/lib/utils"
+import { DeleteAlertDialog } from "@/components/alert-dialogs/delete-alert-dialog"
 
 type HomePageClientProps = {
   trips: Trip[]
@@ -48,6 +49,7 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
   const isProcessingPendingTrip = useRef(false)
 
   const [tripName, setTripName] = useState("")
+  const [tripToDelete, setTripToDelete] = useState<Trip | null>(null)
   const [personName, setPersonName] = useState("")
   const [people, setPeople] = useState<string[]>([])
   const [errors, setErrors] = useState<{
@@ -157,14 +159,12 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
     await createTrip()
   }
 
-  async function handleDeleteTrip(trip: Trip) {
-    const confirmed = window.confirm(`¿Eliminar el sustito "${trip.name}"? Esta acción no se puede deshacer.`)
-
-    if (!confirmed) {
+  async function handleDeleteTrip() {
+    if (!tripToDelete) {
       return
     }
 
-    await deleteTripAction(trip.id)
+    await deleteTripAction(tripToDelete.id)
     router.refresh()
   }
 
@@ -403,7 +403,7 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDeleteTrip(trip)}
+                            onClick={() => setTripToDelete(trip)}
                             aria-label={`Eliminar ${trip.name}`}
                           >
                             <Trash2 className="size-4 text-destructive" />
@@ -427,6 +427,16 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
           </section>
         </div>
       </main>
+
+      <DeleteAlertDialog
+        open={!!tripToDelete}
+        title="¿Eliminar este Sustito?"
+        description={tripToDelete
+          ? (<>Se eliminará el sustito <b>{`"${tripToDelete.name}"`}</b>. Ésta acción no se puede deshacer.</>)
+          : "Esta acción no se puede deshacer."}
+        onClose={() => setTripToDelete(null)}
+        onConfirm={handleDeleteTrip}
+      />
 
       <AuthDialog open={authOpen} onOpenChange={setAuthOpen} onAuthenticated={handleAuthenticated} />
     </>

@@ -21,6 +21,7 @@ import { splitEqually } from "@/lib/expenses/split-equally"
 import { splitCustom } from "@/lib/expenses/split-custom"
 import { formatNumber } from "@/lib/utils"
 import { Pencil, Plus } from "lucide-react"
+import { ScrollShadow } from "../ui/scroll-shadow"
 
 type AddExpenseDialogProps = {
   people: Person[]
@@ -164,13 +165,13 @@ export function AddExpenseDialog({ people, onAdd, expense, onUpdate }: AddExpens
         )}
       </DialogTrigger>
 
-      <DialogContent className="flex flex-col sm:max-w-lg">
-        <DialogHeader className="shrink-0">
+      <DialogContent className="grid max-h-[calc(100dvh-2rem)] min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden px-0 pb-0 sm:max-w-lg">
+        <DialogHeader className="px-4">
           <DialogTitle>{expense ? "Editar gasto" : "Agregar gasto"}</DialogTitle>
         </DialogHeader>
 
-        <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-          <div className="space-y-5">
+        <ScrollShadow className="min-h-0" shadowBottomClassName="from-black/13">
+          <div className="space-y-5 px-4 py-4">
             <div className="space-y-2">
               <Label>Concepto</Label>
 
@@ -263,7 +264,6 @@ export function AddExpenseDialog({ people, onAdd, expense, onUpdate }: AddExpens
                   return (
                     <div key={item.personId} className="flex justify-between text-sm">
                       <span>{person?.name}</span>
-
                       <span>${formatNumber(item.amount)}</span>
                     </div>
                   )
@@ -304,7 +304,7 @@ export function AddExpenseDialog({ people, onAdd, expense, onUpdate }: AddExpens
               {expense ? "Guardar cambios" : "Agregar gasto"}
             </Button>
           </div>
-        </div>
+        </ScrollShadow>
       </DialogContent>
     </Dialog>
   )

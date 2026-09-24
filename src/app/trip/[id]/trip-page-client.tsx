@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Trash2, Share2, Check, ArrowLeft, Pencil, X, ChevronDown, Plus } from "lucide-react"
+import { Trash2, Share2, Check, ArrowLeft, Pencil, X, ChevronDown, Plus, CalendarDays, Clock3 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 
@@ -36,6 +36,8 @@ import {
 import { createTripShareAction, deleteExpenseAction, saveTripAction } from "@/features/trips/actions"
 import { formatNumber } from "@/lib/utils"
 import { authClient } from "@/lib/auth-client"
+import { ScrollShadow } from "@/components/ui/scroll-shadow"
+import { DeleteAlertDialog } from "@/components/alert-dialogs/delete-alert-dialog"
 
 type TripPageClientProps = {
   trip: Trip | null
@@ -299,6 +301,17 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
 
             <CardContent>
               <p className="text-3xl font-bold">${formatNumber(totalSpent)}</p>
+              <div className="gap-3 mt-4 flex flex-col">
+                <span className="inline-flex items-center gap-1">
+                  <CalendarDays className="size-3.5" />
+                  Creado: {new Date(trip.createdAt).toLocaleDateString("es-MX")}
+                </span>
+
+                <span className="inline-flex items-center gap-1">
+                  <Clock3 className="size-3.5" />
+                  Actualizado: {new Date(trip.updatedAt).toLocaleDateString("es-MX")}
+                </span>
+              </div>
             </CardContent>
           </Card>
 
@@ -431,18 +444,18 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
           </Card>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="relative mt-4 min-h-[400px]">
-            <Card className="absolute inset-0 flex flex-col">
-              <CardHeader className="flex shrink-0 flex-row items-center justify-between">
-                <CardTitle>Gastos</CardTitle>
+        <div className="mt-4 grid min-w-0 gap-4 md:grid-cols-2">
+          <Card className="flex max-h-[500px] min-w-0 flex-col md:min-h-[400px] pb-0">
+            <CardHeader className="flex shrink-0 flex-row items-center justify-between">
+              <CardTitle>Gastos</CardTitle>
 
-                <AddExpenseDialog people={trip.people} onAdd={handleAddExpense} />
-              </CardHeader>
+              <AddExpenseDialog people={trip.people} onAdd={handleAddExpense} />
+            </CardHeader>
 
-              <CardContent className="flex-1 overflow-y-auto">
+            <ScrollShadow>
+              <CardContent className="pb-4">
                 {trip.expenses.length === 0 ? (
-                  <div className="py-12 text-center">
+                  <div className="pt-8 pb-6 text-center">
                     <p className="text-muted-foreground">Aún no hay gastos.</p>
 
                     <p className="mt-1 text-sm text-muted-foreground">Agrega el primer gasto del sustito.</p>
@@ -502,9 +515,7 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
                                       >
                                         <span className="text-sm">{person?.name ?? "Desconocido"}</span>
 
-                                        <span className="text-sm font-medium">
-                                          ${formatNumber(participant.amount)}
-                                        </span>
+                                        <span className="text-sm font-medium">${formatNumber(participant.amount)}</span>
                                       </div>
                                     )
                                   })}
@@ -532,20 +543,20 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
                   </div>
                 )}
               </CardContent>
-            </Card>
-          </div>
+            </ScrollShadow>
+          </Card>
 
-          <div className="mt-4 min-h-[400px]">
-            <Card className="h-full">
-              <CardHeader>
-                <CardTitle>Resumen de gastos</CardTitle>
-              </CardHeader>
+          <Card className="flex max-h-[500px] min-w-0 flex-col md:min-h-[400px] pb-0">
+            <CardHeader className="shrink-0">
+              <CardTitle>Resumen de gastos</CardTitle>
+            </CardHeader>
 
-              <CardContent>
+            <ScrollShadow>
+              <CardContent className="!pb-4">
                 <ExpenseSummary people={trip.people} expenses={trip.expenses} />
               </CardContent>
-            </Card>
-          </div>
+            </ScrollShadow>
+          </Card>
         </div>
 
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -570,70 +581,25 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
           </Card>
         </div>
       </div>
-
-      <AlertDialog
+      <DeleteAlertDialog
         open={!!expenseToDelete}
-        onOpenChange={(open) => {
-          if (!open) {
-            setExpenseToDelete(null)
-          }
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar este gasto?</AlertDialogTitle>
+        title="¿Eliminar éste gasto?"
+        description={expenseToDelete
+          ? (<>Se eliminará <b>{`"${expenseToDelete.description}"`}</b> por <b>${formatNumber(expenseToDelete.amount)}</b>. Ésta acción no se puede deshacer.</>)
+          : "Esta acción no se puede deshacer."}
+        onClose={() => setExpenseToDelete(null)}
+        onConfirm={handleDeleteExpense}
+      />
 
-            <AlertDialogDescription>
-              {expenseToDelete
-                ? `Se eliminará "${expenseToDelete.description}" por $${formatNumber(expenseToDelete.amount)}. Esta acción no se puede deshacer.`
-                : "Esta acción no se puede deshacer."}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-
-            <AlertDialogAction
-              onClick={handleDeleteExpense}
-              className="bg-destructive text-white hover:bg-destructive/90"
-            >
-              Eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog
+      <DeleteAlertDialog
         open={!!personToDelete}
-        onOpenChange={(open) => {
-          if (!open) {
-            setPersonToDelete(null)
-          }
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar este participante?</AlertDialogTitle>
-
-            <AlertDialogDescription>
-              {personToDelete
-                ? `Se eliminará a "${personToDelete.name}" del sustito. Esta acción no se puede deshacer.`
-                : "Esta acción no se puede deshacer."}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-
-            <AlertDialogAction
-              onClick={handleDeletePerson}
-              className="bg-destructive text-white hover:bg-destructive/90"
-            >
-              Eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title="¿Eliminar este participante?"
+        description={personToDelete
+          ? (<>Se eliminará <b>{`"${personToDelete.name}"`}</b> del sustito. Ésta acción no se puede deshacer.</>)
+          : "Esta acción no se puede deshacer."}
+        onClose={() => setPersonToDelete(null)}
+        onConfirm={handleDeletePerson}
+      />
     </main>
   )
 }

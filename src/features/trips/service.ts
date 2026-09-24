@@ -195,7 +195,7 @@ export async function saveTrip(input: SaveTripInput, access: TripAccess): Promis
     }
 
     if (!incomingPersonIds.has(expense.paidBy)) {
-      throw new Error("El pagador del gasto debe pertenecer al sustito")
+      throw new Error("Este participante ha pagado al menos un gasto")
     }
 
     if (expense.participants.length === 0) {

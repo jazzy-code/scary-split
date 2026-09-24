@@ -132,3 +132,7 @@
 button {
   cursor: pointer;
 }
+
+* {
+  scrollbar-color: #dce4eb transparent;
+}
