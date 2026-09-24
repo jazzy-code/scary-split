@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 import { authClient } from "@/lib/auth-client"
+import Image from "next/image"
 
 type LoginFormProps = {
   onAuthenticated: () => void
@@ -129,7 +130,7 @@ export function LoginForm({ onAuthenticated, onRegister }: LoginFormProps) {
       </div>
 
       <Button type="button" variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading}>
-        Continuar con Google
+        Continuar con Google <Image src="/google-icon.png" alt="Google" width={18} height={18} />
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">
