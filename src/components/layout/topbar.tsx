@@ -26,7 +26,7 @@ export function Topbar() {
 
   return (
     <>
-    <header className="sticky top-0 z-50 border-b bg-[#341F66]/95 text-white shadow-[0_2px_8px_rgba(0,0,0,0.14)] backdrop-blur supports-[backdrop-filter]:bg-[#341F66]/80">
+    <header className="sticky top-0 z-50 border-b bg-[#24124d]/95 text-white shadow-[0_2px_8px_rgba(0,0,0,0.14)] backdrop-blur supports-[backdrop-filter]:bg-[#24124d]/80">
         <div className="mx-auto flex h-14 items-center justify-between px-4 md:px-8">
           <Link href="/" className="flex items-center">
             <Image src="/scary-split-logo.png" alt="Scary Split" width={32} height={32} />

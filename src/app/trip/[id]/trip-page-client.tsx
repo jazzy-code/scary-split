@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { createTripShareAction, deleteExpenseAction, saveTripAction } from "@/features/trips/actions"
 import { formatNumber } from "@/lib/utils"
+import { authClient } from "@/lib/auth-client"
 
 type TripPageClientProps = {
   trip: Trip | null
@@ -43,6 +44,7 @@ type TripPageClientProps = {
 
 export default function TripPageClient({ trip, shareToken }: TripPageClientProps) {
   const router = useRouter()
+  const { data: session } = authClient.useSession()
 
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null)
   const [personToDelete, setPersonToDelete] = useState<Trip["people"][number] | null>(null)
@@ -264,20 +266,22 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
         <div className="mb-8 ">
           <div className="flex items-end justify-between gap-4 mb-2">
             <p className="ml-1 text-md text-muted-foreground">Sustito</p>
+            {session && (
+              <Button variant="outline" size="sm" onClick={handleShareTrip}>
+                {shareCopied ? (
+                  <>
+                    <Check className="mr-2 size-4" />
+                    Enlace copiado
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="mr-2 size-4" />
+                    Compartir sustito
+                  </>
+                )}
+              </Button>
+            )}
 
-            <Button variant="outline" size="sm" onClick={handleShareTrip}>
-              {shareCopied ? (
-                <>
-                  <Check className="mr-2 size-4" />
-                  Enlace copiado
-                </>
-              ) : (
-                <>
-                  <Share2 className="mr-2 size-4" />
-                  Compartir sustito
-                </>
-              )}
-            </Button>
           </div>
 
           <div className="flex items-center">
