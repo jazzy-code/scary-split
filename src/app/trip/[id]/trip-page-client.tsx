@@ -432,7 +432,7 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <div className="relative mt-4 min-h-screen md:min-h-[400px]">
+          <div className="relative mt-4 min-h-[400px]">
             <Card className="absolute inset-0 flex flex-col">
               <CardHeader className="flex shrink-0 flex-row items-center justify-between">
                 <CardTitle>Gastos</CardTitle>
