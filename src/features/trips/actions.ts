@@ -18,7 +18,11 @@ import type { CreateTripInput, SaveTripInput } from "./types"
 import { createTripSchema, saveTripSchema, tripIdSchema } from "./validations"
 
 export async function getTripsAction() {
-  const session = await requireSession()
+  const session = await getCurrentSession()
+
+  if (!session) {
+    return []
+  }
 
   return getTripsService(session.user.id)
 }
