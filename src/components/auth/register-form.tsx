@@ -73,7 +73,7 @@ export function RegisterForm({ onAuthenticated, onLogin }: RegisterFormProps) {
 
       const result = await authClient.signIn.social({
         provider: "google",
-        callbackURL: window.location.href
+        callbackURL: `${window.location.origin}/`
       })
 
       if (result.error) {

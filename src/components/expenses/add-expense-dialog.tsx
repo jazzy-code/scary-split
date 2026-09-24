@@ -20,7 +20,7 @@ import type { Expense, Person } from "@/lib/expenses/types"
 import { splitEqually } from "@/lib/expenses/split-equally"
 import { splitCustom } from "@/lib/expenses/split-custom"
 import { formatNumber } from "@/lib/utils"
-import { Pencil } from "lucide-react"
+import { Pencil, Plus } from "lucide-react"
 
 type AddExpenseDialogProps = {
   people: Person[]
@@ -158,7 +158,9 @@ export function AddExpenseDialog({ people, onAdd, expense, onUpdate }: AddExpens
             Editar
           </div>
         ) : (
-          "+ Agregar gasto"
+          <>
+            <Plus />Agregar gasto
+          </>
         )}
       </DialogTrigger>
 

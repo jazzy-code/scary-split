@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Trash2, Share2, Check, ArrowLeft, Pencil, X, ChevronDown } from "lucide-react"
+import { Trash2, Share2, Check, ArrowLeft, Pencil, X, ChevronDown, Plus } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 
@@ -254,37 +254,37 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
   return (
     <main className="min-h-screen px-4 py-4 md:px-8 md:py-8">
       <div className="w-full">
-        <div className="mb-4">
+        <div className="mb-1">
           <Button nativeButton={false} variant="ghost" render={<Link href="/" />}>
             <ArrowLeft className="mr-2 size-4" />
             Volver
           </Button>
         </div>
 
-        <div className="mb-8 flex items-start justify-between gap-4">
-          <div>
+        <div className="mb-8 ">
+          <div className="flex items-end justify-between gap-4 mb-2">
             <p className="ml-1 text-md text-muted-foreground">Sustito</p>
 
-            <div className="flex items-center">
-              <Image src="/scary-split-logo.png" alt="Logo" width={40} height={40} />
-
-              <h1 className="ml-1 text-3xl font-bold tracking-tight">{trip.name}</h1>
-            </div>
+            <Button variant="outline" size="sm" onClick={handleShareTrip}>
+              {shareCopied ? (
+                <>
+                  <Check className="mr-2 size-4" />
+                  Enlace copiado
+                </>
+              ) : (
+                <>
+                  <Share2 className="mr-2 size-4" />
+                  Compartir sustito
+                </>
+              )}
+            </Button>
           </div>
 
-          <Button variant="outline" onClick={handleShareTrip}>
-            {shareCopied ? (
-              <>
-                <Check className="mr-2 size-4" />
-                Enlace copiado
-              </>
-            ) : (
-              <>
-                <Share2 className="mr-2 size-4" />
-                Compartir sustito
-              </>
-            )}
-          </Button>
+          <div className="flex items-center">
+            <Image src="/scary-split-logo.png" alt="Logo" width={40} height={40} />
+
+            <h1 className="ml-1 text-3xl font-bold tracking-tight">{trip.name}</h1>
+          </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -323,7 +323,7 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
                 />
 
                 <Button type="button" variant="secondary" onClick={handleAddPerson} disabled={isSavingPerson}>
-                  Agregar
+                  <Plus /> Agregar
                 </Button>
               </div>
 
@@ -385,7 +385,7 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
                           <Badge
                             variant="secondary"
                             aria-invalid={hasDeleteError}
-                            className="flex-1 justify-between px-3 h-[32px]"
+                            className="flex-1 justify-between px-3 h-9"
                           >
                             <span className="text-sm">{person.name}</span>
 
@@ -515,14 +515,10 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
                                   onUpdate={handleUpdateExpense}
                                 />
 
-                                <button
-                                  type="button"
-                                  onClick={() => setExpenseToDelete(expense)}
-                                  className="inline-flex h-8 items-center gap-2 rounded-md border border-destructive/30 px-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
-                                >
-                                  <Trash2 className="size-4" />
+                                <Button variant="destructive" onClick={() => setExpenseToDelete(expense)}>
+                                  <Trash2 />
                                   Eliminar
-                                </button>
+                                </Button>
                               </div>
                             </div>
                           </CollapsibleContent>

@@ -22,6 +22,8 @@ export type Trip = {
   name: string
   people: Person[]
   expenses: Expense[]
+  createdAt: Date
+  updatedAt: Date
 }
 
 export type Balance = {

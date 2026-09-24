@@ -23,6 +23,8 @@ function toTrip(trip: {
       amount: unknown
     }[]
   }[]
+  createdAt: Date
+  updatedAt: Date
 }): Trip {
   return {
     id: trip.id,
@@ -41,7 +43,9 @@ function toTrip(trip: {
         personId: participant.personId,
         amount: Number(participant.amount)
       }))
-    }))
+    })),
+    updatedAt: trip.updatedAt,
+    createdAt: trip.createdAt
   }
 }
 
