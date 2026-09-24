@@ -6,11 +6,16 @@ type TripPageProps = {
   params: Promise<{
     id: string
   }>
+  searchParams: Promise<{
+    share?: string
+  }>
 }
 
-export default async function TripPage({ params }: TripPageProps) {
+export default async function TripPage({ params, searchParams }: TripPageProps) {
   const { id } = await params
-  const trip = await getTripAction(id)
+  const { share } = await searchParams
 
-  return <TripPageClient trip={trip} />
+  const trip = await getTripAction(id, share)
+
+  return <TripPageClient trip={trip} shareToken={share} />
 }

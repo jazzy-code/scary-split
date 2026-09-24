@@ -89,6 +89,7 @@ model Trip {
   members     TripMember[]
   people      Person[]
   expenses    Expense[]
+  shares      TripShare[]
 
   @@map("trip")
 }
@@ -104,6 +105,17 @@ model TripMember {
   @@unique([tripId, userId])
   @@index([userId])
   @@map("trip_member")
+}
+
+model TripShare {
+  id        String   @id @default(cuid())
+  tripId    String
+  tokenHash String   @unique
+  createdAt DateTime @default(now())
+  trip      Trip    @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@map("trip_share")
 }
 
 model Person {

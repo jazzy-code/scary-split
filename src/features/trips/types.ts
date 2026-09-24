@@ -11,3 +11,8 @@ export type SaveTripInput = {
   people: Person[]
   expenses: Expense[]
 }
+
+export type TripAccess = {
+  userId?: string
+  shareToken?: string
+}

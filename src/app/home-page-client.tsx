@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowRight, Trash2, Upload } from "lucide-react"
+import { ArrowRight, Trash2 } from "lucide-react"
 import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { createTripAction, deleteTripAction } from "@/features/trips/actions"
+import { createTripSchema } from "@/features/trips/validations"
 import type { Trip } from "@/lib/expenses/types"
 import { formatNumber } from "@/lib/utils"
 
@@ -23,6 +24,11 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
   const [tripName, setTripName] = useState("")
   const [personName, setPersonName] = useState("")
   const [people, setPeople] = useState<string[]>([])
+  const [errors, setErrors] = useState<{
+    name?: string
+    people?: string
+  }>({})
+  const [isCreating, setIsCreating] = useState(false)
 
   function addPerson() {
     const name = personName.trim()
@@ -32,11 +38,16 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
     }
 
     if (people.some((person) => person.toLowerCase() === name.toLowerCase())) {
+      setErrors((current) => ({
+        ...current,
+        people: "Ya existe un participante con ese nombre"
+      }))
       return
     }
 
     setPeople((current) => [...current, name])
     setPersonName("")
+    setErrors((current) => ({ ...current, people: undefined }))
   }
 
   function removePerson(name: string) {
@@ -44,27 +55,42 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
   }
 
   async function handleCreateTrip() {
-    const name = tripName.trim()
-
-    if (!name || people.length < 2) {
-      return
-    }
-
-    const trip = await createTripAction({
-      name,
+    const input = {
+      name: tripName,
       people: people.map((person) => ({
         id: crypto.randomUUID(),
         name: person
       }))
-    })
+    }
 
-    router.push(`/trip/${trip.id}`)
+    const result = createTripSchema.safeParse(input)
+
+    if (!result.success) {
+      const fieldErrors = result.error.flatten().fieldErrors
+
+      setErrors({
+        name: fieldErrors.name?.[0],
+        people: fieldErrors.people?.[0]
+      })
+
+      return
+    }
+
+    setErrors({})
+    setIsCreating(true)
+
+    try {
+      const trip = await createTripAction(result.data)
+      router.push(`/trip/${trip.id}`)
+    } catch (error) {
+      setIsCreating(false)
+
+      console.error(error)
+    }
   }
 
   async function handleDeleteTrip(trip: Trip) {
-    const confirmed = window.confirm(
-      `¿Eliminar el sustito "${trip.name}"? Esta acción no se puede deshacer.`
-    )
+    const confirmed = window.confirm(`¿Eliminar el sustito "${trip.name}"? Esta acción no se puede deshacer.`)
 
     if (!confirmed) {
       return
@@ -104,8 +130,20 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
                   id="trip-name"
                   placeholder="Puerto Vallarta 2026"
                   value={tripName}
-                  onChange={(event) => setTripName(event.target.value)}
+                  aria-invalid={!!errors.name}
+                  onChange={(event) => {
+                    setTripName(event.target.value)
+
+                    if (errors.name) {
+                      setErrors((current) => ({
+                        ...current,
+                        name: undefined
+                      }))
+                    }
+                  }}
                 />
+
+                {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
               </div>
 
               <div className="space-y-2">
@@ -116,7 +154,14 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
                     id="person"
                     placeholder="Nombre"
                     value={personName}
-                    onChange={(event) => setPersonName(event.target.value)}
+                    aria-invalid={!!errors.people}
+                    onChange={(event) => {
+                      setPersonName(event.target.value)
+
+                      if (errors.people) {
+                        setErrors((current) => ({ ...current, people: undefined }))
+                      }
+                    }}
                     onKeyDown={(event) => {
                       if (event.key === "Enter") {
                         event.preventDefault()
@@ -129,6 +174,8 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
                     Agregar
                   </Button>
                 </div>
+
+                {errors.people && <p className="text-sm text-destructive">{errors.people}</p>}
               </div>
 
               {people.length > 0 && (
@@ -145,25 +192,12 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
                 </div>
               )}
 
-              <Button className="w-full" disabled={!tripName.trim() || people.length < 2} onClick={handleCreateTrip}>
-                Crear sustito
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>¿Ya tienes un sustito?</CardTitle>
-            </CardHeader>
-
-            <CardContent>
-              <p className="mb-4 text-sm text-muted-foreground">
-                Importa un sustito que alguien haya compartido contigo.
-              </p>
-
-              <Button variant="outline" className="w-full" onClick={() => router.push("/import")}>
-                <Upload className="mr-2 size-4" />
-                Importar sustito
+              <Button
+                className="w-full"
+                disabled={isCreating}
+                onClick={handleCreateTrip}
+              >
+                {isCreating ? "Creando..." : "Crear sustito"}
               </Button>
             </CardContent>
           </Card>
@@ -173,7 +207,9 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
           <div className="mb-4">
             <h2 className="text-xl font-semibold">Mis sustitos</h2>
 
-            <p className="text-sm text-muted-foreground">Sustitos guardados en este navegador.</p>
+            <p className="text-sm text-muted-foreground">
+              Aquí verás los sustitos de viajes o eventos pasados que hayas creado.
+            </p>
           </div>
 
           {trips.length === 0 ? (

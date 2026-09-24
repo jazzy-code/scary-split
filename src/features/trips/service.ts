@@ -2,7 +2,8 @@ import type { Trip } from "@/lib/expenses/types"
 
 import { prisma } from "@/lib/prisma/client"
 
-import type { CreateTripInput, SaveTripInput } from "./types"
+import type { CreateTripInput, SaveTripInput, TripAccess } from "./types"
+import { hasValidTripShare } from "./sharing"
 
 function toTrip(trip: {
   id: string
@@ -71,6 +72,29 @@ async function assertTripMember(tripId: string, userId: string) {
   }
 }
 
+async function assertTripAccess(tripId: string, access: TripAccess) {
+  if (access.userId) {
+    const member = await prisma.tripMember.findUnique({
+      where: {
+        tripId_userId: {
+          tripId,
+          userId: access.userId
+        }
+      }
+    })
+
+    if (member) {
+      return
+    }
+  }
+
+  if (access.shareToken && (await hasValidTripShare(tripId, access.shareToken))) {
+    return
+  }
+
+  throw new Error("Unauthorized")
+}
+
 export async function getTrips(userId: string): Promise<Trip[]> {
   const trips = await prisma.trip.findMany({
     where: {
@@ -89,15 +113,12 @@ export async function getTrips(userId: string): Promise<Trip[]> {
   return trips.map(toTrip)
 }
 
-export async function getTrip(tripId: string, userId: string): Promise<Trip | null> {
-  const trip = await prisma.trip.findFirst({
+export async function getTrip(tripId: string, access: TripAccess): Promise<Trip | null> {
+  await assertTripAccess(tripId, access)
+
+  const trip = await prisma.trip.findUnique({
     where: {
-      id: tripId,
-      members: {
-        some: {
-          userId
-        }
-      }
+      id: tripId
     },
     include: tripInclude
   })
@@ -141,79 +162,57 @@ export async function createTrip(input: CreateTripInput, userId: string): Promis
   return toTrip(trip)
 }
 
-export async function saveTrip(input: SaveTripInput, userId: string): Promise<Trip> {
-  await assertTripMember(input.id, userId)
+export async function saveTrip(input: SaveTripInput, access: TripAccess): Promise<Trip> {
+  await assertTripAccess(input.id, access)
 
   if (!input.name.trim()) {
-    throw new Error("Trip name is required")
+    throw new Error("El nombre del sustito es requerido")
   }
 
   if (input.people.length < 2) {
-    throw new Error("A trip requires at least two people")
+    throw new Error("El sustito debe tener al menos dos participantes")
   }
 
   const uniqueNames = new Set(input.people.map((person) => person.name.trim().toLowerCase()))
 
   if (uniqueNames.size !== input.people.length) {
-    throw new Error("Participant names must be unique")
+    throw new Error("Los nombres de los participantes deben ser únicos")
   }
 
-  const existingPeople = await prisma.person.findMany({
-    where: {
-      tripId: input.id
-    },
-    select: {
-      id: true
-    }
-  })
-
-  const existingPersonIds = new Set(existingPeople.map((person) => person.id))
   const incomingPersonIds = new Set(input.people.map((person) => person.id))
-
-  const invalidExistingPeople = input.people.some(
-    (person) => existingPersonIds.has(person.id) && !incomingPersonIds.has(person.id)
-  )
-
-  if (invalidExistingPeople) {
-    throw new Error("Invalid trip participants")
-  }
 
   for (const expense of input.expenses) {
     if (expense.amount <= 0) {
-      throw new Error("Expense amount must be greater than zero")
+      throw new Error("El monto del gasto debe ser mayor a cero")
     }
 
     if (!expense.description.trim()) {
-      throw new Error("Expense description is required")
+      throw new Error("La descripción del gasto es requerida")
     }
 
     if (!incomingPersonIds.has(expense.paidBy)) {
-      throw new Error("Expense payer must belong to the trip")
+      throw new Error("El pagador del gasto debe pertenecer al sustito")
     }
 
     if (expense.participants.length === 0) {
-      throw new Error("Expense requires participants")
+      throw new Error("El gasto debe tener al menos un participante")
     }
 
     const participantTotal = expense.participants.reduce((total, participant) => total + participant.amount, 0)
 
     if (Math.abs(participantTotal - expense.amount) > 0.001) {
-      throw new Error("Expense participants must equal the expense amount")
+      throw new Error("Los montos de los participantes deben ser iguales al monto total del gasto")
     }
 
     const participantIds = new Set(expense.participants.map((participant) => participant.personId))
 
     if (participantIds.size !== expense.participants.length) {
-      throw new Error("Expense participants must be unique")
+      throw new Error("Los participantes de un gasto deben ser únicos")
     }
 
     for (const participant of expense.participants) {
-      if (!incomingPersonIds.has(participant.personId)) {
-        throw new Error("Expense participant must belong to the trip")
-      }
-
       if (participant.amount < 0) {
-        throw new Error("Expense participant amount cannot be negative")
+        throw new Error("El monto del participante no puede ser negativo")
       }
     }
   }
@@ -244,7 +243,7 @@ export async function saveTrip(input: SaveTripInput, userId: string): Promise<Tr
     })
 
     if (conflictingExpense) {
-      throw new Error("Invalid expense")
+      throw new Error("El gasto no es válido")
     }
   }
 
@@ -261,6 +260,24 @@ export async function saveTrip(input: SaveTripInput, userId: string): Promise<Tr
     const transactionPersonIds = new Set(transactionPeople.map((person) => person.id))
     const incomingPeople = new Set(input.people.map((person) => person.id))
 
+    const conflictingPeople = await tx.person.findMany({
+      where: {
+        id: {
+          in: [...incomingPeople]
+        },
+        tripId: {
+          not: input.id
+        }
+      },
+      select: {
+        id: true
+      }
+    })
+
+    if (conflictingPeople.length > 0) {
+      throw new Error("El participante no pertenece al sustito")
+    }
+
     const removedPeople = transactionPeople.filter((person) => !incomingPeople.has(person.id))
 
     if (removedPeople.length > 0) {
@@ -272,50 +289,76 @@ export async function saveTrip(input: SaveTripInput, userId: string): Promise<Tr
           paidById: {
             in: removedPersonIds
           }
+        },
+        select: {
+          id: true
         }
       })
 
       if (peopleWithExpenses) {
-        throw new Error("Cannot remove a person who paid an expense")
+        throw new Error("No se puede eliminar un participante que pagó un gasto")
       }
 
       const peopleWithParticipation = await tx.expenseParticipant.findFirst({
         where: {
+          expense: {
+            tripId: input.id
+          },
           personId: {
             in: removedPersonIds
           }
+        },
+        select: {
+          id: true
         }
       })
 
       if (peopleWithParticipation) {
-        throw new Error("Cannot remove a person who participates in an expense")
+        throw new Error("No se puede eliminar un participante que participa en un gasto")
+      }
+    }
+
+    for (const expense of input.expenses) {
+      if (!incomingPersonIds.has(expense.paidBy)) {
+        throw new Error("El pagador del gasto debe pertenecer al sustito")
       }
 
+      for (const participant of expense.participants) {
+        if (!incomingPersonIds.has(participant.personId)) {
+          throw new Error("El participante del gasto debe pertenecer al sustito")
+        }
+      }
+    }
+
+    if (removedPeople.length > 0) {
       await tx.person.deleteMany({
         where: {
           id: {
-            in: removedPersonIds
+            in: removedPeople.map((person) => person.id)
           }
         }
       })
     }
 
     for (const person of input.people) {
-      if (existingPersonIds.has(person.id) && !transactionPersonIds.has(person.id)) {
-        throw new Error("Invalid trip participant")
+      if (transactionPersonIds.has(person.id)) {
+        await tx.person.update({
+          where: {
+            id: person.id
+          },
+          data: {
+            name: person.name.trim()
+          }
+        })
+
+        continue
       }
 
-      await tx.person.upsert({
-        where: {
-          id: person.id
-        },
-        create: {
+      await tx.person.create({
+        data: {
           id: person.id,
           name: person.name.trim(),
           tripId: input.id
-        },
-        update: {
-          name: person.name.trim()
         }
       })
     }
@@ -357,15 +400,33 @@ export async function saveTrip(input: SaveTripInput, userId: string): Promise<Tr
         })
 
         if (!existingExpense) {
-          throw new Error("Invalid expense")
+          throw new Error("El gasto no es válido")
         }
+
+        await tx.expense.update({
+          where: {
+            id: expense.id
+          },
+          data: {
+            description: expense.description.trim(),
+            amount: expense.amount,
+            splitType: expense.splitType === "equal" ? "EQUAL" : "CUSTOM",
+            paidById: expense.paidBy,
+            participants: {
+              deleteMany: {},
+              create: expense.participants.map((participant) => ({
+                personId: participant.personId,
+                amount: participant.amount
+              }))
+            }
+          }
+        })
+
+        continue
       }
 
-      await tx.expense.upsert({
-        where: {
-          id: expense.id
-        },
-        create: {
+      await tx.expense.create({
+        data: {
           id: expense.id,
           description: expense.description.trim(),
           amount: expense.amount,
@@ -373,19 +434,6 @@ export async function saveTrip(input: SaveTripInput, userId: string): Promise<Tr
           tripId: input.id,
           paidById: expense.paidBy,
           participants: {
-            create: expense.participants.map((participant) => ({
-              personId: participant.personId,
-              amount: participant.amount
-            }))
-          }
-        },
-        update: {
-          description: expense.description.trim(),
-          amount: expense.amount,
-          splitType: expense.splitType === "equal" ? "EQUAL" : "CUSTOM",
-          paidById: expense.paidBy,
-          participants: {
-            deleteMany: {},
             create: expense.participants.map((participant) => ({
               personId: participant.personId,
               amount: participant.amount
@@ -409,15 +457,19 @@ export async function saveTrip(input: SaveTripInput, userId: string): Promise<Tr
   return toTrip(trip)
 }
 
-export async function deleteExpense(tripId: string, expenseId: string, userId: string): Promise<Trip> {
-  await assertTripMember(tripId, userId)
+export async function deleteExpense(tripId: string, expenseId: string, access: TripAccess): Promise<Trip> {
+  await assertTripAccess(tripId, access)
 
-  await prisma.expense.deleteMany({
+  const deletedExpense = await prisma.expense.deleteMany({
     where: {
       id: expenseId,
       tripId
     }
   })
+
+  if (deletedExpense.count === 0) {
+    throw new Error("Expense not found")
+  }
 
   const trip = await prisma.trip.findUnique({
     where: {
