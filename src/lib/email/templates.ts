@@ -106,3 +106,33 @@ export function resetPasswordEmail({ name, url }: { name: string; url: string })
     text: `${greeting}\n\nUsa este enlace para restablecer tu contraseña de Scary Split (válido por 1 hora):\n${url}\n\nSi no fuiste tú, ignora este correo.`
   }
 }
+
+export function invitationEmail({
+  inviterName,
+  tripName,
+  personName,
+  url
+}: {
+  inviterName: string
+  tripName: string
+  personName: string
+  url: string
+}): EmailContent {
+  const inviter = inviterName.trim() || "Alguien"
+
+  return {
+    subject: `${inviter} te invitó a «${tripName}» en Scary Split`,
+    html: renderLayout({
+      preheader: `${inviter} te invitó a un sustito de gastos.`,
+      title: "¡Te invitaron a un sustito! 👻",
+      paragraphs: [
+        `<b>${escapeHtml(inviter)}</b> te agregó como <b>${escapeHtml(personName)}</b> en el sustito <b>«${escapeHtml(tripName)}»</b>.`,
+        "Únete para ver los gastos, qué te toca pagar y registrar tus pagos. El enlace es válido por 7 días y solo se puede usar una vez."
+      ],
+      buttonLabel: "Unirme al sustito",
+      url,
+      footer: "Si no esperabas esta invitación, puedes ignorar este correo."
+    }),
+    text: `${inviter} te invitó al sustito «${tripName}» como ${personName}.\n\nÚnete aquí (válido por 7 días, un solo uso):\n${url}\n\nSi no esperabas esta invitación, ignora este correo.`
+  }
+}

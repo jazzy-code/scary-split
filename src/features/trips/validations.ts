@@ -27,10 +27,16 @@ const expenseSchema = z.object({
   participants: z.array(expenseParticipantSchema).min(1, "El gasto debe tener al menos un participante")
 })
 
-export const createTripSchema = z.object({
-  name: z.string().trim().min(1, "El nombre del sustito es requerido").max(100, "El nombre del sustito es demasiado largo"),
-  people: z.array(personSchema).min(2, "El sustito debe tener al menos dos participantes")
-})
+export const createTripSchema = z
+  .object({
+    name: z.string().trim().min(1, "El nombre del sustito es requerido").max(100, "El nombre del sustito es demasiado largo"),
+    people: z.array(personSchema),
+    includeCreator: z.boolean().optional()
+  })
+  .refine((trip) => trip.people.length + (trip.includeCreator ? 1 : 0) >= 2, {
+    message: "El sustito debe tener al menos dos participantes",
+    path: ["people"]
+  })
 
 export const saveTripSchema = z.object({
   id: z.string().min(1, "El identificador del sustito es requerido"),

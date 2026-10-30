@@ -3,6 +3,7 @@ import { prismaAdapter } from "@better-auth/prisma-adapter"
 
 import { sendEmail } from "./email/send-email"
 import { resetPasswordEmail, verificationEmail } from "./email/templates"
+import { prepareAccountDeletion } from "@/features/members/service"
 import { prisma } from "./prisma/client"
 
 export const auth = betterAuth({
@@ -31,16 +32,8 @@ export const auth = betterAuth({
   user: {
     deleteUser: {
       enabled: true,
-      // Los sustitos donde el usuario es el único miembro quedarían huérfanos, así que se eliminan con la cuenta.
       beforeDelete: async (user) => {
-        await prisma.trip.deleteMany({
-          where: {
-            members: {
-              some: { userId: user.id },
-              every: { userId: user.id }
-            }
-          }
-        })
+        await prepareAccountDeletion(user.id)
       }
     }
   },

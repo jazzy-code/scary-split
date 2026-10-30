@@ -64,7 +64,7 @@ export function LoginForm({ onAuthenticated, onRegister, onForgotPassword }: Log
 
       const result = await authClient.signIn.social({
         provider: "google",
-        callbackURL: `${window.location.origin}/`
+        callbackURL: window.location.href
       })
 
       if (result.error) {

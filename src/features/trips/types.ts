@@ -3,6 +3,8 @@ import type { Expense, Person } from "@/lib/expenses/types"
 export type CreateTripInput = {
   name: string
   people: Person[]
+  /** Agrega a quien crea el sustito como participante vinculado a su cuenta */
+  includeCreator?: boolean
 }
 
 export type SaveTripInput = {

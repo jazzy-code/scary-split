@@ -13,6 +13,12 @@ function toTrip(trip: {
   people: {
     id: string
     name: string
+    userId: string | null
+    email: string | null
+  }[]
+  members: {
+    userId: string
+    role: "OWNER" | "MEMBER"
   }[]
   expenses: {
     id: string
@@ -30,17 +36,26 @@ function toTrip(trip: {
     fromPersonId: string
     toPersonId: string
     amount: unknown
+    createdBy: { name: string } | null
     createdAt: Date
   }[]
   createdAt: Date
   updatedAt: Date
-}): Trip {
+}, viewerUserId?: string): Trip {
+  const memberRoles = new Map(trip.members.map((member) => [member.userId, member.role]))
+  const viewerRole = viewerUserId ? (memberRoles.get(viewerUserId) ?? null) : null
+  const viewerPerson = viewerUserId ? trip.people.find((person) => person.userId === viewerUserId) : undefined
+
   return {
     id: trip.id,
     name: trip.name,
     people: trip.people.map((person) => ({
       id: person.id,
-      name: person.name
+      name: person.name,
+      linked: !!person.userId,
+      memberRole: person.userId ? (memberRoles.get(person.userId) ?? null) : null,
+      // El correo de un invitado solo lo ve el dueño
+      email: viewerRole === "OWNER" ? person.email : null
     })),
     expenses: trip.expenses.map((expense) => ({
       id: expense.id,
@@ -58,8 +73,13 @@ function toTrip(trip: {
       from: payment.fromPersonId,
       to: payment.toPersonId,
       amount: Number(payment.amount),
+      createdByName: payment.createdBy?.name ?? null,
       createdAt: payment.createdAt
     })),
+    viewer: {
+      role: viewerRole,
+      personId: viewerPerson?.id ?? null
+    },
     updatedAt: trip.updatedAt,
     createdAt: trip.createdAt
   }
@@ -92,7 +112,15 @@ function isExpenseUnchanged(
 
 const tripInclude = {
   people: true,
+  members: true,
   payments: {
+    include: {
+      createdBy: {
+        select: {
+          name: true
+        }
+      }
+    },
     orderBy: {
       createdAt: "asc" as const
     }
@@ -107,18 +135,25 @@ const tripInclude = {
   }
 }
 
-async function assertTripMember(tripId: string, userId: string) {
+async function assertTripOwner(tripId: string, userId: string) {
   const member = await prisma.tripMember.findUnique({
     where: {
       tripId_userId: {
         tripId,
         userId
       }
+    },
+    select: {
+      role: true
     }
   })
 
   if (!member) {
     throw new TripAccessError()
+  }
+
+  if (member.role !== "OWNER") {
+    throw new Error("Solo el dueño del sustito puede eliminarlo")
   }
 }
 
@@ -160,7 +195,7 @@ export async function getTrips(userId: string): Promise<Trip[]> {
     }
   })
 
-  return trips.map(toTrip)
+  return trips.map((trip) => toTrip(trip, userId))
 }
 
 export async function getTrip(tripId: string, access: TripAccess): Promise<Trip | null> {
@@ -173,21 +208,25 @@ export async function getTrip(tripId: string, access: TripAccess): Promise<Trip 
     include: tripInclude
   })
 
-  return trip ? toTrip(trip) : null
+  return trip ? toTrip(trip, access.userId) : null
 }
 
-export async function createTrip(input: CreateTripInput, userId: string): Promise<Trip> {
+export async function createTrip(input: CreateTripInput, userId: string, userName: string): Promise<Trip> {
   if (!input.name.trim()) {
     throw new Error("Trip name is required")
   }
 
-  if (input.people.length < 2) {
+  const creatorName = userName.trim()
+  const includeCreator = !!input.includeCreator && !!creatorName
+  const names = [...input.people.map((person) => person.name), ...(includeCreator ? [creatorName] : [])]
+
+  if (names.length < 2) {
     throw new Error("A trip requires at least two people")
   }
 
-  const uniqueNames = new Set(input.people.map((person) => person.name.trim().toLowerCase()))
+  const uniqueNames = new Set(names.map((name) => name.trim().toLowerCase()))
 
-  if (uniqueNames.size !== input.people.length) {
+  if (uniqueNames.size !== names.length) {
     throw new Error("Participant names must be unique")
   }
 
@@ -196,20 +235,24 @@ export async function createTrip(input: CreateTripInput, userId: string): Promis
       name: input.name.trim(),
       members: {
         create: {
-          userId
+          userId,
+          role: "OWNER"
         }
       },
       people: {
-        create: input.people.map((person) => ({
-          id: person.id,
-          name: person.name.trim()
-        }))
+        create: [
+          ...input.people.map((person) => ({
+            id: person.id,
+            name: person.name.trim()
+          })),
+          ...(includeCreator ? [{ name: creatorName, userId }] : [])
+        ]
       }
     },
     include: tripInclude
   })
 
-  return toTrip(trip)
+  return toTrip(trip, userId)
 }
 
 export async function saveTrip(input: SaveTripInput, access: TripAccess): Promise<Trip> {
@@ -304,7 +347,8 @@ export async function saveTrip(input: SaveTripInput, access: TripAccess): Promis
       },
       select: {
         id: true,
-        name: true
+        name: true,
+        userId: true
       }
     })
 
@@ -400,6 +444,28 @@ export async function saveTrip(input: SaveTripInput, access: TripAccess): Promis
     }
 
     if (removedPeople.length > 0) {
+      const removedLinkedUserIds = removedPeople.flatMap((person) => (person.userId ? [person.userId] : []))
+
+      if (removedLinkedUserIds.length > 0) {
+        const requester = access.userId
+          ? await tx.tripMember.findUnique({
+              where: {
+                tripId_userId: {
+                  tripId: input.id,
+                  userId: access.userId
+                }
+              },
+              select: {
+                role: true
+              }
+            })
+          : null
+
+        if (requester?.role !== "OWNER") {
+          throw new Error("Solo el dueño puede eliminar a un participante con cuenta vinculada")
+        }
+      }
+
       await tx.person.deleteMany({
         where: {
           id: {
@@ -407,6 +473,19 @@ export async function saveTrip(input: SaveTripInput, access: TripAccess): Promis
           }
         }
       })
+
+      // Quien ya no es un participante tampoco conserva el acceso, salvo que sea dueño
+      if (removedLinkedUserIds.length > 0) {
+        await tx.tripMember.deleteMany({
+          where: {
+            tripId: input.id,
+            userId: {
+              in: removedLinkedUserIds
+            },
+            role: "MEMBER"
+          }
+        })
+      }
     }
 
     for (const person of input.people) {
@@ -523,7 +602,7 @@ export async function saveTrip(input: SaveTripInput, access: TripAccess): Promis
     timeout: 30000
   })
 
-  return toTrip(trip)
+  return toTrip(trip, access.userId)
 }
 
 export async function registerPayment(input: RegisterPaymentInput, access: TripAccess): Promise<Trip> {
@@ -556,7 +635,8 @@ export async function registerPayment(input: RegisterPaymentInput, access: TripA
       tripId: input.tripId,
       fromPersonId: input.from,
       toPersonId: input.to,
-      amount
+      amount,
+      createdById: access.userId ?? null
     }
   })
 
@@ -567,7 +647,7 @@ export async function registerPayment(input: RegisterPaymentInput, access: TripA
     include: tripInclude
   })
 
-  return toTrip(trip)
+  return toTrip(trip, access.userId)
 }
 
 export async function deletePayment(tripId: string, paymentId: string, access: TripAccess): Promise<Trip> {
@@ -591,7 +671,7 @@ export async function deletePayment(tripId: string, paymentId: string, access: T
     include: tripInclude
   })
 
-  return toTrip(trip)
+  return toTrip(trip, access.userId)
 }
 
 export async function deleteExpense(tripId: string, expenseId: string, access: TripAccess): Promise<Trip> {
@@ -619,11 +699,11 @@ export async function deleteExpense(tripId: string, expenseId: string, access: T
     throw new Error("Trip not found")
   }
 
-  return toTrip(trip)
+  return toTrip(trip, access.userId)
 }
 
 export async function deleteTrip(tripId: string, userId: string): Promise<void> {
-  await assertTripMember(tripId, userId)
+  await assertTripOwner(tripId, userId)
 
   await prisma.trip.delete({
     where: {

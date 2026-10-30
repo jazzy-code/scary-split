@@ -8,9 +8,11 @@ import { toast } from "sonner"
 
 import { AuthDialog } from "@/components/auth/auth-dialog"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { leaveTripAction } from "@/features/members/actions"
 import { createTripAction, deleteTripAction } from "@/features/trips/actions"
 import { createTripSchema } from "@/features/trips/validations"
 import { authClient } from "@/lib/auth-client"
@@ -26,6 +28,7 @@ type HomePageClientProps = {
 type PendingTrip = {
   name: string
   people: string[]
+  includeMe?: boolean
 }
 
 const PENDING_TRIP_STORAGE_KEY = "pending-trip"
@@ -51,7 +54,9 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
   const isProcessingPendingTrip = useRef(false)
 
   const [tripName, setTripName] = useState("")
+  const [includeMe, setIncludeMe] = useState(true)
   const [tripToDelete, setTripToDelete] = useState<Trip | null>(null)
+  const [tripToLeave, setTripToLeave] = useState<Trip | null>(null)
   const [personName, setPersonName] = useState("")
   const [people, setPeople] = useState<string[]>([])
   const [errors, setErrors] = useState<{
@@ -64,7 +69,8 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
   function savePendingTrip() {
     const pendingTrip: PendingTrip = {
       name: tripName,
-      people
+      people,
+      includeMe
     }
 
     sessionStorage.setItem(PENDING_TRIP_STORAGE_KEY, JSON.stringify(pendingTrip))
@@ -100,7 +106,8 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
       people: people.map((person) => ({
         id: crypto.randomUUID(),
         name: person
-      }))
+      })),
+      includeCreator: includeMe
     }
   }
 
@@ -161,6 +168,24 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
     await createTrip()
   }
 
+  async function handleLeaveTrip() {
+    if (!tripToLeave) {
+      return
+    }
+
+    const result = await leaveTripAction(tripToLeave.id)
+
+    setTripToLeave(null)
+
+    if (!result.ok) {
+      toast.error("No se pudo salir del sustito", { description: result.message })
+      return
+    }
+
+    toast.success("Saliste del sustito")
+    router.refresh()
+  }
+
   async function handleDeleteTrip() {
     if (!tripToDelete) {
       return
@@ -188,6 +213,7 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
     startTransition(() => {
       setTripName(pendingTrip.name)
       setPeople(pendingTrip.people)
+      setIncludeMe(pendingTrip.includeMe ?? true)
       setIsCreating(true)
     })
   }, [])
@@ -215,7 +241,8 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
           people: parsedTrip.people.map((person) => ({
             id: crypto.randomUUID(),
             name: person
-          }))
+          })),
+          includeCreator: parsedTrip.includeMe ?? true
         })
 
         if (!result.success) {
@@ -309,6 +336,17 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
                   {errors.people && <p className="text-sm text-destructive">{errors.people}</p>}
                 </div>
 
+                <label className="flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2">
+                  <Checkbox checked={includeMe} disabled={isCreating} onCheckedChange={(checked) => setIncludeMe(!!checked)} />
+
+                  <span className="text-sm">
+                    <span className="font-medium">Incluirme como participante</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {session ? `Te agregaremos como «${session.user.name}».` : "Te agregaremos con el nombre de tu cuenta."}
+                    </span>
+                  </span>
+                </label>
+
                 {people.length > 0 && (
                   <div className="space-y-2">
                     {people.map((person) => (
@@ -362,7 +400,7 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
                   </CardContent>
                 </Card>
               ) : (
-                <TripsSection trips={trips} onDelete={setTripToDelete} />
+                <TripsSection trips={trips} onDelete={setTripToDelete} onLeave={setTripToLeave} />
               )}
             </section>
           </div>
@@ -383,6 +421,23 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
         }
         onClose={() => setTripToDelete(null)}
         onConfirm={handleDeleteTrip}
+      />
+
+      <DeleteAlertDialog
+        open={!!tripToLeave}
+        title="¿Salir de este sustito?"
+        description={
+          tripToLeave ? (
+            <>
+              Dejarás de ver <b>{`"${tripToLeave.name}"`}</b> en tu cuenta. Podrás volver si el dueño te invita otra vez.
+            </>
+          ) : (
+            "Dejarás de ver este sustito en tu cuenta."
+          )
+        }
+        confirmLabel="Salir"
+        onClose={() => setTripToLeave(null)}
+        onConfirm={handleLeaveTrip}
       />
 
       <AuthDialog open={authOpen} onOpenChange={setAuthOpen} onAuthenticated={handleAuthenticated} />

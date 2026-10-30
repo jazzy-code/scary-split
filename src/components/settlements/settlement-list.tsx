@@ -10,6 +10,7 @@ import type {
   Settlement,
 } from "@/lib/expenses/types"
 import { Button } from "@/components/ui/button"
+import { Tip } from "@/components/ui/tip"
 import { getAvatarColor } from "@/components/trips/trip-theme"
 import { cn, formatNumber } from "@/lib/utils"
 
@@ -19,11 +20,12 @@ type SettlementListProps = {
   people: Person[]
   settlements: Settlement[]
   payments: Payment[]
+  viewerPersonId: string | null
   onRegisterPayment: (settlement: Settlement, amount: number) => Promise<void>
   onDeletePayment: (payment: Payment) => Promise<void>
 }
 
-function PersonChip({ person }: { person?: Person }) {
+function PersonChip({ person, isViewer }: { person?: Person; isViewer: boolean }) {
   const name = person?.name ?? "Desconocido"
 
   return (
@@ -38,6 +40,12 @@ function PersonChip({ person }: { person?: Person }) {
       </span>
 
       <span className="truncate font-medium">{name}</span>
+
+      {isViewer && (
+        <span className="shrink-0 rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700">
+          Tú
+        </span>
+      )}
     </span>
   )
 }
@@ -46,6 +54,7 @@ export function SettlementList({
   people,
   settlements,
   payments,
+  viewerPersonId,
   onRegisterPayment,
   onDeletePayment,
 }: SettlementListProps) {
@@ -92,11 +101,11 @@ export function SettlementList({
             >
               <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                 <div className="flex min-w-0 items-center gap-2">
-                  <PersonChip person={getPerson(settlement.from)} />
+                  <PersonChip person={getPerson(settlement.from)} isViewer={settlement.from === viewerPersonId} />
 
                   <ArrowRight className="size-4 shrink-0 text-violet-500" />
 
-                  <PersonChip person={getPerson(settlement.to)} />
+                  <PersonChip person={getPerson(settlement.to)} isViewer={settlement.to === viewerPersonId} />
                 </div>
 
                 <p className="rounded-full bg-amber-300 px-3 py-1 text-sm font-extrabold text-[#24124d] shadow-sm">
@@ -140,21 +149,23 @@ export function SettlementList({
 
                   <p className="text-xs text-muted-foreground">
                     {new Date(payment.createdAt).toLocaleDateString("es-MX")}
+                    {payment.createdByName ? ` · registrado por ${payment.createdByName}` : ""}
                   </p>
                 </div>
 
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-10 shrink-0 sm:size-8"
-                  aria-label="Deshacer pago"
-                  title="Deshacer pago"
-                  disabled={paymentBeingUndone === payment.id}
-                  onClick={() => handleUndo(payment)}
-                >
-                  <Undo2 className="size-4" />
-                </Button>
+                <Tip label="Deshacer pago">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-10 shrink-0 sm:size-8"
+                    aria-label="Deshacer pago"
+                    disabled={paymentBeingUndone === payment.id}
+                    onClick={() => handleUndo(payment)}
+                  >
+                    <Undo2 className="size-4" />
+                  </Button>
+                </Tip>
               </li>
             ))}
           </ul>

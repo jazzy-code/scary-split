@@ -1,8 +1,9 @@
 import Image from "next/image"
 import Link from "next/link"
-import { CalendarDays, Coins, Receipt, Trash2, Users } from "lucide-react"
+import { CalendarDays, Coins, LogOut, Receipt, Trash2, UserRoundCheck, Users } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Tip } from "@/components/ui/tip"
 import type { Trip } from "@/lib/expenses/types"
 import { cn, formatNumber } from "@/lib/utils"
 
@@ -10,17 +11,20 @@ import { isTripSettled } from "@/lib/expenses/is-trip-settled"
 
 import { Drip } from "./drip"
 import { SettledBadge } from "./settled-badge"
+import { ViewerBalanceBadge } from "./viewer-balance-badge"
 import { getTripTheme } from "./trip-theme"
 
 type TripCardProps = {
   trip: Trip
   totalSpent: number
   onDelete: (trip: Trip) => void
+  onLeave: (trip: Trip) => void
 }
 
-export function TripCard({ trip, totalSpent, onDelete }: TripCardProps) {
+export function TripCard({ trip, totalSpent, onDelete, onLeave }: TripCardProps) {
   const theme = getTripTheme(totalSpent)
   const isSettled = isTripSettled(trip)
+  const isOwner = trip.viewer.role === "OWNER"
 
   return (
     <div
@@ -60,6 +64,13 @@ export function TripCard({ trip, totalSpent, onDelete }: TripCardProps) {
           <Receipt className="size-3.5" />
           {trip.expenses.length} {trip.expenses.length === 1 ? "gasto" : "gastos"}
         </span>
+
+        {trip.viewer.role === "MEMBER" && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 backdrop-blur-sm">
+            <UserRoundCheck className="size-3.5" />
+            Invitado
+          </span>
+        )}
       </div>
 
       <div className="mt-auto pt-5">
@@ -67,20 +78,24 @@ export function TripCard({ trip, totalSpent, onDelete }: TripCardProps) {
           <Coins className="size-6" />${formatNumber(totalSpent)}
         </p>
 
+        <ViewerBalanceBadge trip={trip} className="mt-2" />
+
         <div className="mt-2 flex items-center justify-between gap-2">
           <span className="inline-flex items-center gap-1 text-xs text-white/70">
             <CalendarDays className="size-3.5" />
             {new Date(trip.updatedAt).toLocaleDateString("es-MX")}
           </span>
 
-          <Button
-            variant="ghost"
-            size="icon-lg"
-            className="relative z-20 text-white/80 hover:bg-white/20 hover:text-white"
-            aria-label={`Eliminar ${trip.name}`}
-            onClick={() => onDelete(trip)}>
-            <Trash2 className="size-6" />
-          </Button>
+          <Tip label={isOwner ? "Eliminar sustito" : "Salir del sustito"}>
+            <Button
+              variant="ghost"
+              size="icon-lg"
+              className="relative z-20 text-white/80 hover:bg-white/20 hover:text-white"
+              aria-label={isOwner ? `Eliminar ${trip.name}` : `Salir de ${trip.name}`}
+              onClick={() => (isOwner ? onDelete(trip) : onLeave(trip))}>
+              {isOwner ? <Trash2 className="size-6" /> : <LogOut className="size-6" />}
+            </Button>
+          </Tip>
         </div>
       </div>
     </div>

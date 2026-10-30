@@ -117,7 +117,7 @@ export function WelcomeDialog() {
 
           {session && !session.user.emailVerified && (
             <p className="mt-3 rounded-xl bg-white/10 px-3 py-2 text-sm text-white/90">
-              Te enviamos un correo para verificar tu cuenta. Revisa tu bandeja.
+              Te enviamos un correo para verificar tu cuenta. Si no lo ves, revisa tu carpeta de spam.
             </p>
           )}
         </div>

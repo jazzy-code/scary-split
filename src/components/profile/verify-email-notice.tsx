@@ -37,7 +37,7 @@ export function VerifyEmailNotice({ email }: { email: string }) {
         return
       }
 
-      toast.success("Correo enviado", { description: `Revisa la bandeja de ${email}.` })
+      toast.success("Correo enviado", { description: `Revisa la bandeja de ${email}. Si no lo ves, busca en spam.` })
       setCooldown(RESEND_COOLDOWN_SECONDS)
     } catch (error) {
       console.error(error)

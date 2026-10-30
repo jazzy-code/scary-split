@@ -6,7 +6,7 @@ export function createShareToken() {
   return randomBytes(32).toString("base64url")
 }
 
-function hashShareToken(token: string) {
+export function hashShareToken(token: string) {
   return createHash("sha256").update(token).digest("hex")
 }
 

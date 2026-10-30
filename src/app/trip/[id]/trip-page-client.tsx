@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Coins, EllipsisVertical, Trash2, Share2, Check, ArrowLeft, Pencil, X, ChevronDown, Plus, CalendarDays, Clock3 } from "lucide-react"
+import { Coins, LogOut, EllipsisVertical, UserPlus, Trash2, Share2, Check, ArrowLeft, Pencil, X, ChevronDown, Plus, CalendarDays, Clock3 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { toast } from "sonner"
@@ -33,8 +33,15 @@ import {
   saveTripAction
 } from "@/features/trips/actions"
 import { cn, formatNumber } from "@/lib/utils"
+import { copyToClipboard } from "@/lib/clipboard"
+import { InvitePersonDialog } from "@/components/members/invite-person-dialog"
+import { PersonActionsMenu } from "@/components/members/person-actions-menu"
+import { PersonStatus } from "@/components/members/person-status"
+import { Tip } from "@/components/ui/tip"
+import { joinTripAsParticipantAction, leaveTripAction } from "@/features/members/actions"
 import { Drip } from "@/components/trips/drip"
 import { SettledBadge } from "@/components/trips/settled-badge"
+import { ViewerBalanceBadge } from "@/components/trips/viewer-balance-badge"
 import { isTripSettled } from "@/lib/expenses/is-trip-settled"
 import { getAvatarColor, getTripTheme } from "@/components/trips/trip-theme"
 import { authClient } from "@/lib/auth-client"
@@ -46,42 +53,6 @@ type TripPageClientProps = {
   shareToken?: string
 }
 
-async function copyToClipboard(textPromise: Promise<string>) {
-  // Safari/iOS exigen iniciar la copia dentro del clic; ClipboardItem acepta una promesa
-  // para que el texto se resuelva despues de esperar a la server action.
-  if (navigator.clipboard?.write && typeof ClipboardItem !== "undefined" && window.isSecureContext) {
-    await navigator.clipboard.write([
-      new ClipboardItem({
-        "text/plain": textPromise.then((text) => new Blob([text], { type: "text/plain" }))
-      })
-    ])
-    return
-  }
-
-  const text = await textPromise
-
-  if (navigator.clipboard && window.isSecureContext) {
-    await navigator.clipboard.writeText(text)
-    return
-  }
-
-  // Fallback para contextos no seguros (http) donde navigator.clipboard no existe
-  const textarea = document.createElement("textarea")
-  textarea.value = text
-  textarea.style.position = "fixed"
-  textarea.style.opacity = "0"
-  document.body.appendChild(textarea)
-  textarea.select()
-
-  try {
-    if (!document.execCommand("copy")) {
-      throw new Error("No se pudo copiar al portapapeles")
-    }
-  } finally {
-    document.body.removeChild(textarea)
-  }
-}
-
 export default function TripPageClient({ trip, shareToken }: TripPageClientProps) {
   const router = useRouter()
   const { data: session } = authClient.useSession()
@@ -90,6 +61,8 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null)
   const [personToDelete, setPersonToDelete] = useState<Trip["people"][number] | null>(null)
   const [shareCopied, setShareCopied] = useState(false)
+  const [personToInvite, setPersonToInvite] = useState<Trip["people"][number] | null>(null)
+  const [leaveOpen, setLeaveOpen] = useState(false)
   const [personName, setPersonName] = useState("")
   const [editingPersonId, setEditingPersonId] = useState<string | null>(null)
   const [editingPersonName, setEditingPersonName] = useState("")
@@ -123,6 +96,40 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
         description: "Inténtalo de nuevo en un momento."
       })
     }
+  }
+
+  async function handleLeaveTrip() {
+    if (!trip) {
+      return
+    }
+
+    const result = await leaveTripAction(trip.id)
+
+    if (!result.ok) {
+      setLeaveOpen(false)
+      toast.error("No se pudo salir del sustito", { description: result.message })
+      return
+    }
+
+    toast.success("Saliste del sustito")
+    router.push("/")
+    router.refresh()
+  }
+
+  async function handleJoinAsParticipant() {
+    if (!trip) {
+      return
+    }
+
+    const result = await joinTripAsParticipantAction(trip.id)
+
+    if (!result.ok) {
+      toast.error("No se pudo sumarte", { description: result.message })
+      return
+    }
+
+    toast.success("¡Listo! Ahora eres participante 👻", { description: "Ya puedes dividir gastos contigo." })
+    router.refresh()
   }
 
   async function handleAddPerson() {
@@ -369,6 +376,14 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
         <div className="mb-8 ">
           <div className="flex items-end justify-between gap-4 mb-2">
             <p className="ml-1 text-md text-muted-foreground">Sustito</p>
+            <div className="flex items-center gap-2">
+            {trip.viewer.role === "MEMBER" && (
+              <Button variant="ghost" size="sm" onClick={() => setLeaveOpen(true)}>
+                <LogOut className="mr-2 size-4" />
+                Salir del sustito
+              </Button>
+            )}
+
             {session && (
               <Button variant="outline" size="sm" onClick={handleShareTrip}>
                 {shareCopied ? (
@@ -384,6 +399,7 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
                 )}
               </Button>
             )}
+            </div>
 
           </div>
 
@@ -416,6 +432,8 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
               <p className="inline-flex items-center gap-2 text-4xl font-extrabold tracking-tight text-amber-300 drop-shadow">
                 <Coins className="size-8" />${formatNumber(totalSpent)}
               </p>
+
+              <ViewerBalanceBadge trip={trip} className="mt-3" />
               <div className="gap-3 mt-4 flex flex-col text-white/75">
                 <span className="inline-flex items-center gap-1">
                   <CalendarDays className="size-3.5" />
@@ -460,6 +478,13 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
               </div>
 
               {personError && <p className="text-sm text-destructive">{personError}</p>}
+
+              {trip.viewer.role === "OWNER" && !trip.viewer.personId && (
+                <Button type="button" variant="outline" size="sm" className="w-full" onClick={handleJoinAsParticipant}>
+                  <UserPlus />
+                  Sumarme a este sustito
+                </Button>
+              )}
 
               <div className="space-y-2">
                 {trip.people.map((person) => {
@@ -529,43 +554,22 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
                                 {person.name.trim().charAt(0).toUpperCase()}
                               </span>
                               {person.name}
+                              <PersonStatus person={person} isViewer={person.id === trip.viewer.personId} />
                             </span>
 
-                            <DropdownMenu>
-                              <DropdownMenuTrigger
-                                render={
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="-mr-2 size-10 sm:size-8"
-                                    aria-label={`Opciones de ${person.name}`}
-                                    title="Opciones"
-                                  />
-                                }
-                              >
-                                <EllipsisVertical className="size-4" />
-                              </DropdownMenuTrigger>
-
-                              <DropdownMenuContent align="end" className="w-40">
-                                <DropdownMenuItem onClick={() => handleStartEditPerson(person)}>
-                                  <Pencil className="size-4" />
-                                  Editar
-                                </DropdownMenuItem>
-
-                                <DropdownMenuItem
-                                  variant="destructive"
-                                  onClick={() => {
-                                    setPersonToDelete(person)
-                                    setDeletePersonError("")
-                                    setDeletePersonErrorId(null)
-                                  }}
-                                >
-                                  <Trash2 className="size-4" />
-                                  Eliminar
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                            <PersonActionsMenu
+                              tripId={trip.id}
+                              person={person}
+                              viewerRole={trip.viewer.role}
+                              viewerPersonId={trip.viewer.personId}
+                              onEdit={() => handleStartEditPerson(person)}
+                              onInvite={() => setPersonToInvite(person)}
+                              onDelete={() => {
+                                setPersonToDelete(person)
+                                setDeletePersonError("")
+                                setDeletePersonErrorId(null)
+                              }}
+                            />
                           </Badge>
                         )}
                       </div>
@@ -624,20 +628,21 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
                           </CollapsibleTrigger>
 
                           <DropdownMenu>
-                            <DropdownMenuTrigger
-                              render={
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="mr-2 size-10 shrink-0 sm:size-8"
-                                  aria-label={`Opciones de ${expense.description}`}
-                                  title="Opciones"
-                                />
-                              }
-                            >
-                              <EllipsisVertical className="size-4" />
-                            </DropdownMenuTrigger>
+                            <Tip label="Opciones">
+                              <DropdownMenuTrigger
+                                render={
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="mr-2 size-10 shrink-0 sm:size-8"
+                                    aria-label={`Opciones de ${expense.description}`}
+                                  />
+                                }
+                              >
+                                <EllipsisVertical className="size-4" />
+                              </DropdownMenuTrigger>
+                            </Tip>
 
                             <DropdownMenuContent align="end" className="w-40">
                               <DropdownMenuItem onClick={() => setExpenseToEdit(expense)}>
@@ -736,6 +741,7 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
                 people={trip.people}
                 settlements={settlements}
                 payments={trip.payments}
+                viewerPersonId={trip.viewer.personId}
                 onRegisterPayment={handleRegisterPayment}
                 onDeletePayment={handleDeletePayment}
               />
@@ -773,10 +779,21 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
         open={!!personToDelete}
         title="¿Eliminar este participante?"
         description={personToDelete
-          ? (<>Se eliminará <b>{`"${personToDelete.name}"`}</b> del sustito. Ésta acción no se puede deshacer.</>)
+          ? (<>Se eliminará <b>{`"${personToDelete.name}"`}</b> del sustito.{personToDelete.linked && " Tiene una cuenta vinculada y perderá el acceso a este sustito."} Ésta acción no se puede deshacer.</>)
           : "Esta acción no se puede deshacer."}
         onClose={() => setPersonToDelete(null)}
         onConfirm={handleDeletePerson}
+      />
+
+      <InvitePersonDialog tripId={trip.id} person={personToInvite} onClose={() => setPersonToInvite(null)} />
+
+      <DeleteAlertDialog
+        open={leaveOpen}
+        title="¿Salir de este sustito?"
+        description="Dejarás de ver este sustito en tu cuenta y tu vínculo con el participante se quitará. Podrás volver si el dueño te invita otra vez."
+        confirmLabel="Salir"
+        onClose={() => setLeaveOpen(false)}
+        onConfirm={handleLeaveTrip}
       />
     </main>
   )

@@ -57,7 +57,7 @@ export async function createTripAction(input: CreateTripInput) {
   const session = await requireSession()
   const validatedInput = createTripSchema.parse(input)
 
-  const trip = await createTripService(validatedInput, session.user.id)
+  const trip = await createTripService(validatedInput, session.user.id, session.user.name)
 
   revalidatePath("/")
 

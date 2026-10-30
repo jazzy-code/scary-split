@@ -8,13 +8,14 @@ import { formatNumber } from "@/lib/utils"
 type TripsSectionProps = {
   trips: Trip[]
   onDelete: (trip: Trip) => void
+  onLeave: (trip: Trip) => void
 }
 
 function getTotalSpent(trip: Trip) {
   return trip.expenses.reduce((total, expense) => total + expense.amount, 0)
 }
 
-export function TripsSection({ trips, onDelete }: TripsSectionProps) {
+export function TripsSection({ trips, onDelete, onLeave }: TripsSectionProps) {
   const pendingTrips = trips.filter((trip) => !isTripSettled(trip))
   const settledTrips = trips.filter(isTripSettled)
 
@@ -50,7 +51,7 @@ export function TripsSection({ trips, onDelete }: TripsSectionProps) {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {pendingTrips.map((trip) => (
-              <TripCard key={trip.id} trip={trip} totalSpent={getTotalSpent(trip)} onDelete={onDelete} />
+              <TripCard key={trip.id} trip={trip} totalSpent={getTotalSpent(trip)} onDelete={onDelete} onLeave={onLeave} />
             ))}
           </div>
         )}
@@ -65,7 +66,7 @@ export function TripsSection({ trips, onDelete }: TripsSectionProps) {
 
           <div className="grid gap-4 sm:grid-cols-2">
             {settledTrips.map((trip) => (
-              <TripCard key={trip.id} trip={trip} totalSpent={getTotalSpent(trip)} onDelete={onDelete} />
+              <TripCard key={trip.id} trip={trip} totalSpent={getTotalSpent(trip)} onDelete={onDelete} onLeave={onLeave} />
             ))}
           </div>
         </section>

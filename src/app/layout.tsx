@@ -3,6 +3,7 @@ import { Fredoka, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Topbar } from "@/components/layout/topbar";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { WelcomeDialog } from "@/components/auth/welcome-dialog";
 
 const geistSans = Geist({
@@ -33,7 +34,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <Topbar />
-        {children}
+        <TooltipProvider>{children}</TooltipProvider>
         <WelcomeDialog />
         <Toaster position="top-center" duration={3000} />
       </body>

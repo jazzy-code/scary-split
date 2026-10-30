@@ -58,7 +58,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
           <p className="font-medium">Revisa tu correo</p>
           <p className="text-sm text-muted-foreground">
             Si existe una cuenta con <b>{email.trim()}</b>, te enviamos un enlace para elegir una nueva contraseña. Es
-            válido por 1 hora.
+            válido por 1 hora. Si no lo ves, revisa tu carpeta de spam.
           </p>
         </div>
 

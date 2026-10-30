@@ -7,9 +7,10 @@ interface DeleteAlertDialogProps {
   onConfirm: () => void
   title: string
   description: ReactNode
+  confirmLabel?: string
 }
 
-export function DeleteAlertDialog({ open, onClose, onConfirm, title, description }: DeleteAlertDialogProps) {
+export function DeleteAlertDialog({ open, onClose, onConfirm, title, description, confirmLabel = "Eliminar" }: DeleteAlertDialogProps) {
   return (
     <AlertDialog
       open={open}
@@ -35,7 +36,7 @@ export function DeleteAlertDialog({ open, onClose, onConfirm, title, description
             onClick={onConfirm}
             className="bg-none bg-destructive text-white hover:bg-destructive/90 hover:from-transparent hover:to-transparent"
           >
-            Eliminar
+            {confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
