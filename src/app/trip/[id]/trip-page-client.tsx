@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Trash2, Share2, Check, ArrowLeft, Pencil, X, ChevronDown, Plus, CalendarDays, Clock3 } from "lucide-react"
+import { Coins, Trash2, Share2, Check, ArrowLeft, Pencil, X, ChevronDown, Plus, CalendarDays, Clock3 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { toast } from "sonner"
@@ -25,7 +25,9 @@ import { SettlementList } from "@/components/settlements/settlement-list"
 import { ExpenseSummary } from "@/components/settlements/expense-summary"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { createTripShareAction, deleteExpenseAction, saveTripAction } from "@/features/trips/actions"
-import { formatNumber } from "@/lib/utils"
+import { cn, formatNumber } from "@/lib/utils"
+import { Drip } from "@/components/trips/drip"
+import { getAvatarColor, getTripTheme } from "@/components/trips/trip-theme"
 import { authClient } from "@/lib/auth-client"
 import { ScrollShadow } from "@/components/ui/scroll-shadow"
 import { DeleteAlertDialog } from "@/components/alert-dialogs/delete-alert-dialog"
@@ -100,7 +102,7 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
       await copyToClipboard(urlPromise)
 
       setShareCopied(true)
-      toast.success("Enlace copiado al portapapeles")
+      toast.success("¡Enlace copiado! 👻", { description: "Compártelo con tus amigos para que se unan al sustito." })
 
       setTimeout(() => {
         setShareCopied(false)
@@ -146,6 +148,7 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
       }
 
       await saveTripAction(updatedTrip, shareToken)
+      toast.success("Participante agregado correctamente 👻")
 
       setPersonName("")
       router.refresh()
@@ -229,6 +232,7 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
       }
 
       await saveTripAction(updatedTrip, shareToken)
+      toast.success("¡Participante esfumado! 👻")
 
       setPersonToDelete(null)
       router.refresh()
@@ -251,8 +255,14 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
       expenses: [...trip.expenses, expense]
     }
 
-    await saveTripAction(updatedTrip, shareToken)
-    router.refresh()
+    try {
+      await saveTripAction(updatedTrip, shareToken)
+      toast.success('Gasto agregado correctamente', { description: 'El sustito va creciendo 👻' })
+      router.refresh()
+    } catch (error) {
+      console.error(error)
+      toast.error(error instanceof Error ? error.message : "No se pudo agregar el gasto")
+    }
   }
 
   async function handleUpdateExpense(expense: Expense) {
@@ -265,8 +275,14 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
       expenses: trip.expenses.map((item) => (item.id === expense.id ? expense : item))
     }
 
-    await saveTripAction(updatedTrip, shareToken)
-    router.refresh()
+    try {
+      await saveTripAction(updatedTrip, shareToken)
+      toast.success('Gasto agregado correctamente 👻', { description: 'El sustito va creciendo' })
+      router.refresh()
+    } catch (error) {
+      console.error(error)
+      toast.error(error instanceof Error ? error.message : "No se pudo actualizar el gasto")
+    }
   }
 
   async function handleDeleteExpense() {
@@ -276,6 +292,7 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
 
     try {
       await deleteExpenseAction(trip.id, expenseToDelete.id, shareToken)
+      toast.info('¡Gasto esfumado! 👻', { description: 'El sustito ha disminuído' })
 
       setExpenseToDelete(null)
       router.refresh()
@@ -295,6 +312,7 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
   }
 
   const totalSpent = trip.expenses.reduce((total, expense) => total + expense.amount, 0)
+  const theme = getTripTheme(totalSpent)
   const balances = calculateBalances(trip.people, trip.expenses)
   const settlements = simplifyDebts(balances)
 
@@ -337,14 +355,26 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Card>
+          <Card className={cn("relative bg-gradient-to-br text-white ring-black/10", theme.background)}>
+            <Drip color={theme.drip} />
+
+            <Image
+              src="/scary-split-logo.png"
+              alt=""
+              width={120}
+              height={120}
+              className="pointer-events-none absolute -right-3 -bottom-4 size-28 rotate-6 opacity-25"
+            />
+
             <CardHeader>
-              <CardTitle>Total gastado</CardTitle>
+              <CardTitle className="max-w-[70%]">Total gastado</CardTitle>
             </CardHeader>
 
-            <CardContent>
-              <p className="text-3xl font-bold">${formatNumber(totalSpent)}</p>
-              <div className="gap-3 mt-4 flex flex-col">
+            <CardContent className="relative">
+              <p className="inline-flex items-center gap-2 text-4xl font-extrabold tracking-tight text-amber-300 drop-shadow">
+                <Coins className="size-8" />${formatNumber(totalSpent)}
+              </p>
+              <div className="gap-3 mt-4 flex flex-col text-white/75">
                 <span className="inline-flex items-center gap-1">
                   <CalendarDays className="size-3.5" />
                   Creado: {new Date(trip.createdAt).toLocaleDateString("es-MX")}
@@ -447,7 +477,17 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
                             aria-invalid={hasDeleteError}
                             className="flex-1 justify-between px-3 h-9"
                           >
-                            <span className="text-sm">{person.name}</span>
+                            <span className="flex items-center gap-2 text-sm">
+                              <span
+                                className={cn(
+                                  "flex size-6 items-center justify-center rounded-full text-xs font-bold text-white",
+                                  getAvatarColor(person.id)
+                                )}
+                              >
+                                {person.name.trim().charAt(0).toUpperCase()}
+                              </span>
+                              {person.name}
+                            </span>
 
                             <span className="ml-2 flex items-center gap-1">
                               <button

@@ -33,7 +33,7 @@ export function DeleteAlertDialog({ open, onClose, onConfirm, title, description
 
           <AlertDialogAction
             onClick={onConfirm}
-            className="bg-destructive text-white hover:bg-destructive/90"
+            className="bg-none bg-destructive text-white hover:bg-destructive/90 hover:from-transparent hover:to-transparent"
           >
             Eliminar
           </AlertDialogAction>

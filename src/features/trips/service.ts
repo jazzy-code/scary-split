@@ -50,6 +50,31 @@ function toTrip(trip: {
   }
 }
 
+function isExpenseUnchanged(
+  existing: {
+    description: string
+    amount: unknown
+    splitType: "EQUAL" | "CUSTOM"
+    paidById: string
+    participants: { personId: string; amount: unknown }[]
+  },
+  incoming: SaveTripInput["expenses"][number]
+) {
+  if (
+    existing.description !== incoming.description.trim() ||
+    Number(existing.amount) !== incoming.amount ||
+    existing.splitType !== (incoming.splitType === "equal" ? "EQUAL" : "CUSTOM") ||
+    existing.paidById !== incoming.paidBy ||
+    existing.participants.length !== incoming.participants.length
+  ) {
+    return false
+  }
+
+  const existingAmounts = new Map(existing.participants.map((participant) => [participant.personId, Number(participant.amount)]))
+
+  return incoming.participants.every((participant) => existingAmounts.get(participant.personId) === participant.amount)
+}
+
 const tripInclude = {
   people: true,
   expenses: {
@@ -258,11 +283,12 @@ export async function saveTrip(input: SaveTripInput, access: TripAccess): Promis
         tripId: input.id
       },
       select: {
-        id: true
+        id: true,
+        name: true
       }
     })
 
-    const transactionPersonIds = new Set(transactionPeople.map((person) => person.id))
+    const transactionPeopleById = new Map(transactionPeople.map((person) => [person.id, person]))
     const incomingPeople = new Set(input.people.map((person) => person.id))
 
     const conflictingPeople = await tx.person.findMany({
@@ -346,15 +372,19 @@ export async function saveTrip(input: SaveTripInput, access: TripAccess): Promis
     }
 
     for (const person of input.people) {
-      if (transactionPersonIds.has(person.id)) {
-        await tx.person.update({
-          where: {
-            id: person.id
-          },
-          data: {
-            name: person.name.trim()
-          }
-        })
+      const existingPerson = transactionPeopleById.get(person.id)
+
+      if (existingPerson) {
+        if (existingPerson.name !== person.name.trim()) {
+          await tx.person.update({
+            where: {
+              id: person.id
+            },
+            data: {
+              name: person.name.trim()
+            }
+          })
+        }
 
         continue
       }
@@ -372,12 +402,12 @@ export async function saveTrip(input: SaveTripInput, access: TripAccess): Promis
       where: {
         tripId: input.id
       },
-      select: {
-        id: true
+      include: {
+        participants: true
       }
     })
 
-    const transactionExpenseIds = new Set(transactionExpenses.map((expense) => expense.id))
+    const transactionExpensesById = new Map(transactionExpenses.map((expense) => [expense.id, expense]))
     const incomingExpenses = new Set(input.expenses.map((expense) => expense.id))
 
     const removedExpenses = transactionExpenses.filter((expense) => !incomingExpenses.has(expense.id))
@@ -393,19 +423,11 @@ export async function saveTrip(input: SaveTripInput, access: TripAccess): Promis
     }
 
     for (const expense of input.expenses) {
-      if (transactionExpenseIds.has(expense.id)) {
-        const existingExpense = await tx.expense.findFirst({
-          where: {
-            id: expense.id,
-            tripId: input.id
-          },
-          select: {
-            id: true
-          }
-        })
+      const existingExpense = transactionExpensesById.get(expense.id)
 
-        if (!existingExpense) {
-          throw new Error("El gasto no es válido")
+      if (existingExpense) {
+        if (isExpenseUnchanged(existingExpense, expense)) {
+          continue
         }
 
         await tx.expense.update({
@@ -457,6 +479,10 @@ export async function saveTrip(input: SaveTripInput, access: TripAccess): Promis
       },
       include: tripInclude
     })
+  }, {
+    // Cada query a Neon cuesta una ida y vuelta; el default de 5s se queda corto con varios gastos
+    maxWait: 10000,
+    timeout: 30000
   })
 
   return toTrip(trip)
