@@ -47,3 +47,17 @@ export const updateTripSchema = z.object({
 export const tripIdSchema = z.object({
   tripId: z.string().min(1, "El identificador del sustito es requerido")
 })
+
+export const registerPaymentSchema = z
+  .object({
+    tripId: z.string().min(1, "El identificador del sustito es requerido"),
+    from: z.string().min(1, "Quien paga es requerido"),
+    to: z.string().min(1, "Quien recibe es requerido"),
+    amount: z.number().finite().positive("El monto del pago debe ser mayor a cero")
+  })
+  .refine((payment) => payment.from !== payment.to, "Quien paga y quien recibe deben ser distintos")
+
+export const paymentIdSchema = z.object({
+  tripId: z.string().min(1, "El identificador del sustito es requerido"),
+  paymentId: z.string().min(1, "El identificador del pago es requerido")
+})

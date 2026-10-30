@@ -16,3 +16,10 @@ export type TripAccess = {
   userId?: string
   shareToken?: string
 }
+
+export type RegisterPaymentInput = {
+  tripId: string
+  from: string
+  to: string
+  amount: number
+}

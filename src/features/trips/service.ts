@@ -1,8 +1,9 @@
 import type { Trip } from "@/lib/expenses/types"
 
+import { roundMoney } from "@/lib/money/round"
 import { prisma } from "@/lib/prisma/client"
 
-import type { CreateTripInput, SaveTripInput, TripAccess } from "./types"
+import type { CreateTripInput, RegisterPaymentInput, SaveTripInput, TripAccess } from "./types"
 import { TripAccessError } from "./errors"
 import { hasValidTripShare } from "./sharing"
 
@@ -24,6 +25,13 @@ function toTrip(trip: {
       amount: unknown
     }[]
   }[]
+  payments: {
+    id: string
+    fromPersonId: string
+    toPersonId: string
+    amount: unknown
+    createdAt: Date
+  }[]
   createdAt: Date
   updatedAt: Date
 }): Trip {
@@ -44,6 +52,13 @@ function toTrip(trip: {
         personId: participant.personId,
         amount: Number(participant.amount)
       }))
+    })),
+    payments: trip.payments.map((payment) => ({
+      id: payment.id,
+      from: payment.fromPersonId,
+      to: payment.toPersonId,
+      amount: Number(payment.amount),
+      createdAt: payment.createdAt
     })),
     updatedAt: trip.updatedAt,
     createdAt: trip.createdAt
@@ -77,6 +92,11 @@ function isExpenseUnchanged(
 
 const tripInclude = {
   people: true,
+  payments: {
+    orderBy: {
+      createdAt: "asc" as const
+    }
+  },
   expenses: {
     include: {
       participants: true
@@ -349,6 +369,24 @@ export async function saveTrip(input: SaveTripInput, access: TripAccess): Promis
       }
     }
 
+    if (removedPeople.length > 0) {
+      const removedPersonIds = removedPeople.map((person) => person.id)
+
+      const peopleWithPayments = await tx.settlementPayment.findFirst({
+        where: {
+          tripId: input.id,
+          OR: [{ fromPersonId: { in: removedPersonIds } }, { toPersonId: { in: removedPersonIds } }]
+        },
+        select: {
+          id: true
+        }
+      })
+
+      if (peopleWithPayments) {
+        throw new Error("No se puede eliminar un participante con pagos registrados")
+      }
+    }
+
     for (const expense of input.expenses) {
       if (!incomingPersonIds.has(expense.paidBy)) {
         throw new Error("El pagador del gasto debe pertenecer al sustito")
@@ -483,6 +521,74 @@ export async function saveTrip(input: SaveTripInput, access: TripAccess): Promis
     // Cada query a Neon cuesta una ida y vuelta; el default de 5s se queda corto con varios gastos
     maxWait: 10000,
     timeout: 30000
+  })
+
+  return toTrip(trip)
+}
+
+export async function registerPayment(input: RegisterPaymentInput, access: TripAccess): Promise<Trip> {
+  await assertTripAccess(input.tripId, access)
+
+  const people = await prisma.person.findMany({
+    where: {
+      tripId: input.tripId,
+      id: {
+        in: [input.from, input.to]
+      }
+    },
+    select: {
+      id: true
+    }
+  })
+
+  if (people.length !== 2) {
+    throw new Error("Los participantes del pago no pertenecen al sustito")
+  }
+
+  const amount = roundMoney(input.amount)
+
+  if (amount <= 0) {
+    throw new Error("El monto del pago debe ser mayor a cero")
+  }
+
+  await prisma.settlementPayment.create({
+    data: {
+      tripId: input.tripId,
+      fromPersonId: input.from,
+      toPersonId: input.to,
+      amount
+    }
+  })
+
+  const trip = await prisma.trip.findUniqueOrThrow({
+    where: {
+      id: input.tripId
+    },
+    include: tripInclude
+  })
+
+  return toTrip(trip)
+}
+
+export async function deletePayment(tripId: string, paymentId: string, access: TripAccess): Promise<Trip> {
+  await assertTripAccess(tripId, access)
+
+  const deletedPayment = await prisma.settlementPayment.deleteMany({
+    where: {
+      id: paymentId,
+      tripId
+    }
+  })
+
+  if (deletedPayment.count === 0) {
+    throw new Error("Payment not found")
+  }
+
+  const trip = await prisma.trip.findUniqueOrThrow({
+    where: {
+      id: tripId
+    },
+    include: tripInclude
   })
 
   return toTrip(trip)

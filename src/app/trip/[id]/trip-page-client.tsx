@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AddExpenseDialog } from "@/components/expenses/add-expense-dialog"
-import type { Expense, Trip } from "@/lib/expenses/types"
+import type { Expense, Payment, Settlement, Trip } from "@/lib/expenses/types"
 import { calculateBalances } from "@/lib/expenses/calculate-balances"
 import { simplifyDebts } from "@/lib/expenses/simplify-debts"
 import { BalanceSummary } from "@/components/settlements/balance-summary"
@@ -25,9 +25,17 @@ import { SettlementList } from "@/components/settlements/settlement-list"
 import { ExpenseSummary } from "@/components/settlements/expense-summary"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { createTripShareAction, deleteExpenseAction, saveTripAction } from "@/features/trips/actions"
+import {
+  createTripShareAction,
+  deleteExpenseAction,
+  deletePaymentAction,
+  registerPaymentAction,
+  saveTripAction
+} from "@/features/trips/actions"
 import { cn, formatNumber } from "@/lib/utils"
 import { Drip } from "@/components/trips/drip"
+import { SettledBadge } from "@/components/trips/settled-badge"
+import { isTripSettled } from "@/lib/expenses/is-trip-settled"
 import { getAvatarColor, getTripTheme } from "@/components/trips/trip-theme"
 import { authClient } from "@/lib/auth-client"
 import { ScrollShadow } from "@/components/ui/scroll-shadow"
@@ -287,6 +295,36 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
     }
   }
 
+  async function handleRegisterPayment(settlement: Settlement, amount: number) {
+    if (!trip) {
+      return
+    }
+
+    await registerPaymentAction(
+      { tripId: trip.id, from: settlement.from, to: settlement.to, amount },
+      shareToken
+    )
+
+    toast.success("¡Pago registrado! 💸", { description: "Las deudas se actualizaron." })
+    router.refresh()
+  }
+
+  async function handleDeletePayment(payment: Payment) {
+    if (!trip) {
+      return
+    }
+
+    try {
+      await deletePaymentAction(trip.id, payment.id, shareToken)
+
+      toast.success("Pago deshecho", { description: "La deuda volvió a quedar pendiente." })
+      router.refresh()
+    } catch (error) {
+      console.error(error)
+      toast.error("No se pudo deshacer el pago")
+    }
+  }
+
   async function handleDeleteExpense() {
     if (!trip || !expenseToDelete) {
       return
@@ -315,7 +353,7 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
 
   const totalSpent = trip.expenses.reduce((total, expense) => total + expense.amount, 0)
   const theme = getTripTheme(totalSpent)
-  const balances = calculateBalances(trip.people, trip.expenses)
+  const balances = calculateBalances(trip.people, trip.expenses, trip.payments)
   const settlements = simplifyDebts(balances)
 
   return (
@@ -353,6 +391,8 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
             <Image src="/scary-split-logo.png" alt="Logo" width={40} height={40} />
 
             <h1 className="ml-1 text-3xl font-bold tracking-tight">{trip.name}</h1>
+
+            {isTripSettled(trip) && <SettledBadge className="ml-3" />}
           </div>
         </div>
 
@@ -692,7 +732,13 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
             </CardHeader>
 
             <CardContent>
-              <SettlementList people={trip.people} settlements={settlements} />
+              <SettlementList
+                people={trip.people}
+                settlements={settlements}
+                payments={trip.payments}
+                onRegisterPayment={handleRegisterPayment}
+                onDeletePayment={handleDeletePayment}
+              />
             </CardContent>
           </Card>
         </div>

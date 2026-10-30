@@ -1,9 +1,10 @@
 import { roundMoney } from "../money/round"
-import type { Balance, Expense, Person } from "./types"
+import type { Balance, Expense, Payment, Person } from "./types"
 
 export function calculateBalances(
   people: Person[],
   expenses: Expense[],
+  payments: Payment[] = [],
 ): Balance[] {
   const balances = new Map<string, number>()
 
@@ -29,6 +30,12 @@ export function calculateBalances(
         balance - participant.amount,
       )
     }
+  }
+
+  // Un pago es una transferencia real: baja lo que debe quien paga y lo que espera quien cobra.
+  for (const payment of payments) {
+    balances.set(payment.from, (balances.get(payment.from) ?? 0) + payment.amount)
+    balances.set(payment.to, (balances.get(payment.to) ?? 0) - payment.amount)
   }
 
   return people.map((person) => ({

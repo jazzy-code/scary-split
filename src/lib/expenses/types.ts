@@ -17,11 +17,20 @@ export type Expense = {
   participants: ExpenseParticipant[]
 }
 
+export type Payment = {
+  id: string
+  from: string
+  to: string
+  amount: number
+  createdAt: Date
+}
+
 export type Trip = {
   id: string
   name: string
   people: Person[]
   expenses: Expense[]
+  payments: Payment[]
   createdAt: Date
   updatedAt: Date
 }

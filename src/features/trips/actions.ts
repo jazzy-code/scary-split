@@ -7,16 +7,18 @@ import { getCurrentSession, requireSession } from "@/lib/auth-utils"
 import {
   createTrip as createTripService,
   deleteExpense as deleteExpenseService,
+  deletePayment as deletePaymentService,
   deleteTrip as deleteTripService,
   getTrip as getTripService,
   getTrips as getTripsService,
+  registerPayment as registerPaymentService,
   saveTrip as saveTripService
 } from "./service"
 import { TripAccessError } from "./errors"
 import { createTripShare } from "./sharing"
 
-import type { CreateTripInput, SaveTripInput } from "./types"
-import { createTripSchema, saveTripSchema, tripIdSchema } from "./validations"
+import type { CreateTripInput, RegisterPaymentInput, SaveTripInput } from "./types"
+import { createTripSchema, paymentIdSchema, registerPaymentSchema, saveTripSchema, tripIdSchema } from "./validations"
 
 export async function getTripsAction() {
   const session = await getCurrentSession()
@@ -116,4 +118,32 @@ export async function deleteTripAction(tripId: string) {
   await deleteTripService(validatedTripId, session.user.id)
 
   revalidatePath("/")
+}
+
+export async function registerPaymentAction(input: RegisterPaymentInput, shareToken?: string) {
+  const session = await getCurrentSession()
+  const validatedInput = registerPaymentSchema.parse(input)
+
+  const trip = await registerPaymentService(validatedInput, {
+    userId: session?.user.id,
+    shareToken
+  })
+
+  revalidatePath(`/trip/${trip.id}`)
+
+  return trip
+}
+
+export async function deletePaymentAction(tripId: string, paymentId: string, shareToken?: string) {
+  const session = await getCurrentSession()
+  const validatedInput = paymentIdSchema.parse({ tripId, paymentId })
+
+  const trip = await deletePaymentService(validatedInput.tripId, validatedInput.paymentId, {
+    userId: session?.user.id,
+    shareToken
+  })
+
+  revalidatePath(`/trip/${trip.id}`)
+
+  return trip
 }

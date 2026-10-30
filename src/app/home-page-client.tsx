@@ -14,10 +14,9 @@ import { Label } from "@/components/ui/label"
 import { createTripAction, deleteTripAction } from "@/features/trips/actions"
 import { createTripSchema } from "@/features/trips/validations"
 import { authClient } from "@/lib/auth-client"
-import { formatNumber } from "@/lib/utils"
 import type { Trip } from "@/lib/expenses/types"
 import { HomeHero } from "@/components/home/home-hero"
-import { TripCard } from "@/components/trips/trip-card"
+import { TripsSection } from "@/components/home/trips-section"
 import { DeleteAlertDialog } from "@/components/alert-dialogs/delete-alert-dialog"
 
 type HomePageClientProps = {
@@ -177,10 +176,6 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
       setTripToDelete(null)
       toast.error("No se pudo eliminar el sustito")
     }
-  }
-
-  function getTotalSpent(trip: Trip) {
-    return trip.expenses.reduce((total, expense) => total + expense.amount, 0)
   }
 
   useEffect(() => {
@@ -367,31 +362,7 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
                   </CardContent>
                 </Card>
               ) : (
-                <>
-                  <div className="mb-4 grid grid-cols-3 gap-3">
-                    {[
-                      { label: "Sustitos", value: trips.length },
-                      { label: "Gastos", value: trips.reduce((total, trip) => total + trip.expenses.length, 0) },
-                      {
-                        label: "Total gastado",
-                        value: `$${formatNumber(trips.reduce((total, trip) => total + getTotalSpent(trip), 0))}`
-                      }
-                    ].map((stat) => (
-                      <div
-                        key={stat.label}
-                        className="rounded-2xl bg-card px-4 py-3 shadow-sm ring-1 ring-foreground/10">
-                        <p className="text-xs text-muted-foreground">{stat.label}</p>
-                        <p className="truncate font-heading text-xl font-bold text-[#4a2a8f]">{stat.value}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {trips.map((trip) => (
-                      <TripCard key={trip.id} trip={trip} totalSpent={getTotalSpent(trip)} onDelete={setTripToDelete} />
-                    ))}
-                  </div>
-                </>
+                <TripsSection trips={trips} onDelete={setTripToDelete} />
               )}
             </section>
           </div>

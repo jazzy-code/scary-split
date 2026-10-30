@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button"
 import type { Trip } from "@/lib/expenses/types"
 import { cn, formatNumber } from "@/lib/utils"
 
+import { isTripSettled } from "@/lib/expenses/is-trip-settled"
+
 import { Drip } from "./drip"
+import { SettledBadge } from "./settled-badge"
 import { getTripTheme } from "./trip-theme"
 
 type TripCardProps = {
@@ -17,12 +20,14 @@ type TripCardProps = {
 
 export function TripCard({ trip, totalSpent, onDelete }: TripCardProps) {
   const theme = getTripTheme(totalSpent)
+  const isSettled = isTripSettled(trip)
 
   return (
     <div
       className={cn(
         "group relative flex min-h-56 flex-col overflow-hidden rounded-2xl bg-gradient-to-br p-5 text-white shadow-md ring-1 ring-black/10",
         "transition duration-200 hover:-translate-y-1 hover:rotate-[0.6deg] hover:shadow-xl",
+        isSettled && "opacity-70 hover:opacity-100",
         theme.background
       )}>
       <Link
@@ -40,6 +45,8 @@ export function TripCard({ trip, totalSpent, onDelete }: TripCardProps) {
         height={120}
         className="pointer-events-none absolute -right-3 -bottom-4 size-28 rotate-6 opacity-25 transition duration-200 group-hover:-rotate-3 group-hover:opacity-40"
       />
+
+      {isSettled && <SettledBadge className="relative mb-2 self-start" />}
 
       <h3 className="line-clamp-2 max-w-[75%] pt-1 text-xl leading-tight font-bold tracking-tight">{trip.name}</h3>
 
