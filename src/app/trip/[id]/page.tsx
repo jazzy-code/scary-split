@@ -1,3 +1,5 @@
+import { notFound } from "next/navigation"
+
 import { getTripAction } from "@/features/trips/actions"
 
 import TripPageClient from "./trip-page-client"
@@ -16,6 +18,10 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
   const { share } = await searchParams
 
   const trip = await getTripAction(id, share)
+
+  if (!trip) {
+    notFound()
+  }
 
   return <TripPageClient trip={trip} shareToken={share} />
 }

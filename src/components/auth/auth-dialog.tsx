@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 
 import {
   Dialog,
@@ -23,6 +24,7 @@ type AuthDialogProps = {
 }
 
 export function AuthDialog({ open, onOpenChange, initialMode = "login", onAuthenticated }: AuthDialogProps) {
+  const router = useRouter()
   const [mode, setMode] = useState<AuthMode>(initialMode)
 
   function handleOpenChange(nextOpen: boolean) {
@@ -35,6 +37,8 @@ export function AuthDialog({ open, onOpenChange, initialMode = "login", onAuthen
 
   function handleAuthenticated() {
     onOpenChange(false)
+    // Los server components (lista de sustitos, acceso al trip) se renderizaron sin sesión
+    router.refresh()
     onAuthenticated?.()
   }
 

@@ -12,6 +12,7 @@ import {
   getTrips as getTripsService,
   saveTrip as saveTripService
 } from "./service"
+import { TripAccessError } from "./errors"
 import { createTripShare } from "./sharing"
 
 import type { CreateTripInput, SaveTripInput } from "./types"
@@ -30,12 +31,24 @@ export async function getTripsAction() {
 export async function getTripAction(tripId: string, shareToken?: string) {
   const session = await getCurrentSession()
 
-  const { tripId: validatedTripId } = tripIdSchema.parse({ tripId })
+  const parsedTripId = tripIdSchema.safeParse({ tripId })
 
-  return getTripService(validatedTripId, {
-    userId: session?.user.id,
-    shareToken
-  })
+  if (!parsedTripId.success) {
+    return null
+  }
+
+  try {
+    return await getTripService(parsedTripId.data.tripId, {
+      userId: session?.user.id,
+      shareToken
+    })
+  } catch (error) {
+    if (error instanceof TripAccessError) {
+      return null
+    }
+
+    throw error
+  }
 }
 
 export async function createTripAction(input: CreateTripInput) {

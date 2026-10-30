@@ -4,6 +4,7 @@ import { startTransition, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowRight, CalendarDays, Clock3, Loader2, Plus, Trash2 } from "lucide-react"
 import Image from "next/image"
+import { toast } from "sonner"
 
 import { AuthDialog } from "@/components/auth/auth-dialog"
 import { Button } from "@/components/ui/button"
@@ -164,8 +165,14 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
       return
     }
 
-    await deleteTripAction(tripToDelete.id)
-    router.refresh()
+    try {
+      await deleteTripAction(tripToDelete.id)
+      router.refresh()
+    } catch (error) {
+      console.error(error)
+      setTripToDelete(null)
+      toast.error("No se pudo eliminar el sustito")
+    }
   }
 
   function getTotalSpent(trip: Trip) {

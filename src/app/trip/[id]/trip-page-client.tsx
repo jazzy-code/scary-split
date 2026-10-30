@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Trash2, Share2, Check, ArrowLeft, Pencil, X, ChevronDown, Plus, CalendarDays, Clock3 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import { toast } from "sonner"
 
 import {
   Card,
@@ -23,16 +24,6 @@ import { BalanceSummary } from "@/components/settlements/balance-summary"
 import { SettlementList } from "@/components/settlements/settlement-list"
 import { ExpenseSummary } from "@/components/settlements/expense-summary"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle
-} from "@/components/ui/alert-dialog"
 import { createTripShareAction, deleteExpenseAction, saveTripAction } from "@/features/trips/actions"
 import { formatNumber } from "@/lib/utils"
 import { authClient } from "@/lib/auth-client"
@@ -42,6 +33,42 @@ import { DeleteAlertDialog } from "@/components/alert-dialogs/delete-alert-dialo
 type TripPageClientProps = {
   trip: Trip | null
   shareToken?: string
+}
+
+async function copyToClipboard(textPromise: Promise<string>) {
+  // Safari/iOS exigen iniciar la copia dentro del clic; ClipboardItem acepta una promesa
+  // para que el texto se resuelva despues de esperar a la server action.
+  if (navigator.clipboard?.write && typeof ClipboardItem !== "undefined" && window.isSecureContext) {
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        "text/plain": textPromise.then((text) => new Blob([text], { type: "text/plain" }))
+      })
+    ])
+    return
+  }
+
+  const text = await textPromise
+
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(text)
+    return
+  }
+
+  // Fallback para contextos no seguros (http) donde navigator.clipboard no existe
+  const textarea = document.createElement("textarea")
+  textarea.value = text
+  textarea.style.position = "fixed"
+  textarea.style.opacity = "0"
+  document.body.appendChild(textarea)
+  textarea.select()
+
+  try {
+    if (!document.execCommand("copy")) {
+      throw new Error("No se pudo copiar al portapapeles")
+    }
+  } finally {
+    document.body.removeChild(textarea)
+  }
 }
 
 export default function TripPageClient({ trip, shareToken }: TripPageClientProps) {
@@ -64,16 +91,26 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
       return
     }
 
-    const token = await createTripShareAction(trip.id)
-    const url = `${window.location.origin}/trip/${trip.id}?share=${encodeURIComponent(token)}`
+    try {
+      const origin = window.location.origin
+      const urlPromise = createTripShareAction(trip.id).then(
+        (token) => `${origin}/trip/${trip.id}?share=${encodeURIComponent(token)}`
+      )
 
-    await navigator.clipboard.writeText(url)
+      await copyToClipboard(urlPromise)
 
-    setShareCopied(true)
+      setShareCopied(true)
+      toast.success("Enlace copiado al portapapeles")
 
-    setTimeout(() => {
-      setShareCopied(false)
-    }, 2000)
+      setTimeout(() => {
+        setShareCopied(false)
+      }, 2000)
+    } catch (error) {
+      console.error(error)
+      toast.error("No se pudo copiar el enlace", {
+        description: "Inténtalo de nuevo en un momento."
+      })
+    }
   }
 
   async function handleAddPerson() {
@@ -237,10 +274,16 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
       return
     }
 
-    await deleteExpenseAction(trip.id, expenseToDelete.id, shareToken)
+    try {
+      await deleteExpenseAction(trip.id, expenseToDelete.id, shareToken)
 
-    setExpenseToDelete(null)
-    router.refresh()
+      setExpenseToDelete(null)
+      router.refresh()
+    } catch (error) {
+      console.error(error)
+      setExpenseToDelete(null)
+      toast.error("No se pudo eliminar el gasto")
+    }
   }
 
   if (!trip) {

@@ -3,6 +3,7 @@ import type { Trip } from "@/lib/expenses/types"
 import { prisma } from "@/lib/prisma/client"
 
 import type { CreateTripInput, SaveTripInput, TripAccess } from "./types"
+import { TripAccessError } from "./errors"
 import { hasValidTripShare } from "./sharing"
 
 function toTrip(trip: {
@@ -72,7 +73,7 @@ async function assertTripMember(tripId: string, userId: string) {
   })
 
   if (!member) {
-    throw new Error("Unauthorized")
+    throw new TripAccessError()
   }
 }
 
@@ -96,7 +97,7 @@ async function assertTripAccess(tripId: string, access: TripAccess) {
     return
   }
 
-  throw new Error("Unauthorized")
+  throw new TripAccessError()
 }
 
 export async function getTrips(userId: string): Promise<Trip[]> {
