@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
+import { AddPasswordForm } from "./add-password-form"
 import { authClient } from "@/lib/auth-client"
 
 type SecurityCardProps = {
@@ -163,10 +164,7 @@ export function SecurityCard({ hasPassword }: SecurityCardProps) {
             </Button>
           </form>
         ) : (
-          <p className="text-sm text-muted-foreground">
-            Inicias sesión con Google, así que no necesitas una contraseña. La seguridad de tu cuenta depende de tu
-            cuenta de Google.
-          </p>
+          <AddPasswordForm />
         )}
 
         <Separator />
