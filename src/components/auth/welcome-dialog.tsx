@@ -114,6 +114,12 @@ export function WelcomeDialog() {
             {firstName ? `Hola, ${firstName}. ` : ""}Aquí los sustitos de gastos dan menos miedo. Crea tu primer
             sustito y deja que nosotros hagamos las cuentas. 👻
           </DialogDescription>
+
+          {session && !session.user.emailVerified && (
+            <p className="mt-3 rounded-xl bg-white/10 px-3 py-2 text-sm text-white/90">
+              Te enviamos un correo para verificar tu cuenta. Revisa tu bandeja.
+            </p>
+          )}
         </div>
 
         <div className="h-1.5 w-full bg-white/15" aria-hidden>

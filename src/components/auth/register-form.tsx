@@ -52,7 +52,8 @@ export function RegisterForm({ onAuthenticated, onLogin }: RegisterFormProps) {
       const result = await authClient.signUp.email({
         name: name.trim(),
         email: email.trim(),
-        password
+        password,
+        callbackURL: `${window.location.origin}/profile`
       })
 
       if (result.error) {

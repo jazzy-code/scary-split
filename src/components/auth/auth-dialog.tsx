@@ -11,16 +11,29 @@ import {
   DialogTitle
 } from "@/components/ui/dialog"
 
+import { ForgotPasswordForm } from "./forgot-password-form"
 import { LoginForm } from "./login-form"
 import { RegisterForm } from "./register-form"
 
-type AuthMode = "login" | "register"
+type AuthMode = "login" | "register" | "forgot-password"
 
 type AuthDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   initialMode?: AuthMode
   onAuthenticated?: () => void
+}
+
+const titles: Record<AuthMode, string> = {
+  login: "Inicia sesión",
+  register: "Crea tu cuenta",
+  "forgot-password": "Recupera tu contraseña"
+}
+
+const descriptions: Record<AuthMode, string> = {
+  login: "Inicia sesión para crear, guardar y compartir tus sustitos.",
+  register: "Regístrate para crear, guardar y compartir tus sustitos con tus amigos.",
+  "forgot-password": "Te enviaremos un enlace por correo para elegir una nueva contraseña."
 }
 
 export function AuthDialog({ open, onOpenChange, initialMode = "login", onAuthenticated }: AuthDialogProps) {
@@ -46,20 +59,22 @@ export function AuthDialog({ open, onOpenChange, initialMode = "login", onAuthen
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{mode === "login" ? "Inicia sesión" : "Crea tu cuenta"}</DialogTitle>
+          <DialogTitle>{titles[mode]}</DialogTitle>
 
-          <DialogDescription>
-            {mode === "login"
-              ? "Inicia sesión para crear, guardar y compartir tus sustitos."
-              : "Regístrate para crear, guardar y compartir tus sustitos con tus amigos."}
-          </DialogDescription>
+          <DialogDescription>{descriptions[mode]}</DialogDescription>
         </DialogHeader>
 
-        {mode === "login" ? (
-          <LoginForm onAuthenticated={handleAuthenticated} onRegister={() => setMode("register")} />
-        ) : (
-          <RegisterForm onAuthenticated={handleAuthenticated} onLogin={() => setMode("login")} />
+        {mode === "login" && (
+          <LoginForm
+            onAuthenticated={handleAuthenticated}
+            onRegister={() => setMode("register")}
+            onForgotPassword={() => setMode("forgot-password")}
+          />
         )}
+
+        {mode === "register" && <RegisterForm onAuthenticated={handleAuthenticated} onLogin={() => setMode("login")} />}
+
+        {mode === "forgot-password" && <ForgotPasswordForm onBack={() => setMode("login")} />}
       </DialogContent>
     </Dialog>
   )

@@ -13,9 +13,10 @@ import Image from "next/image"
 type LoginFormProps = {
   onAuthenticated: () => void
   onRegister: () => void
+  onForgotPassword: () => void
 }
 
-export function LoginForm({ onAuthenticated, onRegister }: LoginFormProps) {
+export function LoginForm({ onAuthenticated, onRegister, onForgotPassword }: LoginFormProps) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -97,7 +98,18 @@ export function LoginForm({ onAuthenticated, onRegister }: LoginFormProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="login-password">Contraseña</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="login-password">Contraseña</Label>
+
+            <button
+              type="button"
+              className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+              onClick={onForgotPassword}
+              disabled={isLoading}
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
+          </div>
 
           <PasswordInput
             id="login-password"
