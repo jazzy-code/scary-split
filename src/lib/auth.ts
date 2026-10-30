@@ -12,6 +12,22 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true
   },
+  user: {
+    deleteUser: {
+      enabled: true,
+      // Los sustitos donde el usuario es el único miembro quedarían huérfanos, así que se eliminan con la cuenta.
+      beforeDelete: async (user) => {
+        await prisma.trip.deleteMany({
+          where: {
+            members: {
+              some: { userId: user.id },
+              every: { userId: user.id }
+            }
+          }
+        })
+      }
+    }
+  },
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID!,

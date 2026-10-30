@@ -4,6 +4,7 @@ import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
 
 import { authClient } from "@/lib/auth-client"
@@ -127,9 +128,8 @@ export function RegisterForm({ onAuthenticated, onLogin }: RegisterFormProps) {
         <div className="space-y-2">
           <Label htmlFor="register-password">Contraseña</Label>
 
-          <Input
+          <PasswordInput
             id="register-password"
-            type="password"
             autoComplete="new-password"
             value={password}
             aria-invalid={!!error}
