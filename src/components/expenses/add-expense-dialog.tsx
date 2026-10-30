@@ -28,20 +28,51 @@ type AddExpenseDialogProps = {
   onAdd: (expense: Expense) => void
   expense?: Expense
   onUpdate?: (expense: Expense) => void
+  /** Modo controlado: el padre decide cuándo se abre y no se muestra el botón disparador */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function AddExpenseDialog({ people, onAdd, expense, onUpdate }: AddExpenseDialogProps) {
-  const [open, setOpen] = useState(false)
+export function AddExpenseDialog({
+  people,
+  onAdd,
+  expense,
+  onUpdate,
+  open: controlledOpen,
+  onOpenChange
+}: AddExpenseDialogProps) {
+  const isControlled = controlledOpen !== undefined
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
+  const open = isControlled ? controlledOpen : uncontrolledOpen
 
-  const [description, setDescription] = useState("")
-  const [amount, setAmount] = useState("")
-  const [paidBy, setPaidBy] = useState("")
+  function setOpen(nextOpen: boolean) {
+    if (!isControlled) {
+      setUncontrolledOpen(nextOpen)
+    }
 
-  const [selectedPeople, setSelectedPeople] = useState<string[]>([])
+    onOpenChange?.(nextOpen)
+  }
 
-  const [splitMode, setSplitMode] = useState<"equal" | "custom">("equal")
+  // En modo controlado el formulario nace ya cargado con el gasto a editar
+  const initialExpense = isControlled ? expense : undefined
 
-  const [customAmounts, setCustomAmounts] = useState<Record<string, string>>({})
+  const [description, setDescription] = useState(initialExpense?.description ?? "")
+  const [amount, setAmount] = useState(initialExpense ? initialExpense.amount.toString() : "")
+  const [paidBy, setPaidBy] = useState(initialExpense?.paidBy ?? "")
+
+  const [selectedPeople, setSelectedPeople] = useState<string[]>(
+    initialExpense ? initialExpense.participants.map((participant) => participant.personId) : []
+  )
+
+  const [splitMode, setSplitMode] = useState<"equal" | "custom">(initialExpense?.splitType ?? "equal")
+
+  const [customAmounts, setCustomAmounts] = useState<Record<string, string>>(
+    initialExpense
+      ? Object.fromEntries(
+          initialExpense.participants.map((participant) => [participant.personId, participant.amount.toString()])
+        )
+      : {}
+  )
 
   const numericAmount = Number(amount)
 
@@ -141,29 +172,31 @@ export function AddExpenseDialog({ people, onAdd, expense, onUpdate }: AddExpens
         }
       }}
     >
-      <DialogTrigger
-        render={
-          <Button
-            variant={expense ? "outline" : "default"}
-            onClick={() => {
-              if (expense) {
-                loadExpense(expense)
-              }
-            }}
-          />
-        }
-      >
-        {expense ? (
-          <div className="flex items-center gap-2">
-            <Pencil />
-            Editar
-          </div>
-        ) : (
-          <>
-            <Plus />Agregar gasto
-          </>
-        )}
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger
+          render={
+            <Button
+              variant={expense ? "outline" : "default"}
+              onClick={() => {
+                if (expense) {
+                  loadExpense(expense)
+                }
+              }}
+            />
+          }
+        >
+          {expense ? (
+            <div className="flex items-center gap-2">
+              <Pencil />
+              Editar
+            </div>
+          ) : (
+            <>
+              <Plus />Agregar gasto
+            </>
+          )}
+        </DialogTrigger>
+      )}
 
       <DialogContent className="grid max-h-[calc(100dvh-2rem)] min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden px-0 pb-0 sm:max-w-lg">
         <DialogHeader className="px-4">

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Coins, Trash2, Share2, Check, ArrowLeft, Pencil, X, ChevronDown, Plus, CalendarDays, Clock3 } from "lucide-react"
+import { Coins, EllipsisVertical, Trash2, Share2, Check, ArrowLeft, Pencil, X, ChevronDown, Plus, CalendarDays, Clock3 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { toast } from "sonner"
@@ -23,6 +23,7 @@ import { simplifyDebts } from "@/lib/expenses/simplify-debts"
 import { BalanceSummary } from "@/components/settlements/balance-summary"
 import { SettlementList } from "@/components/settlements/settlement-list"
 import { ExpenseSummary } from "@/components/settlements/expense-summary"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { createTripShareAction, deleteExpenseAction, saveTripAction } from "@/features/trips/actions"
 import { cn, formatNumber } from "@/lib/utils"
@@ -77,6 +78,7 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
   const router = useRouter()
   const { data: session } = authClient.useSession()
 
+  const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null)
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null)
   const [personToDelete, setPersonToDelete] = useState<Trip["people"][number] | null>(null)
   const [shareCopied, setShareCopied] = useState(false)
@@ -489,29 +491,41 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
                               {person.name}
                             </span>
 
-                            <span className="ml-2 flex items-center gap-1">
-                              <button
-                                type="button"
-                                onClick={() => handleStartEditPerson(person)}
-                                className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                                aria-label={`Editar a ${person.name}`}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger
+                                render={
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="-mr-2 size-10 sm:size-8"
+                                    aria-label={`Opciones de ${person.name}`}
+                                    title="Opciones"
+                                  />
+                                }
                               >
-                                <Pencil className="size-4" />
-                              </button>
+                                <EllipsisVertical className="size-4" />
+                              </DropdownMenuTrigger>
 
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setPersonToDelete(person)
-                                  setDeletePersonError("")
-                                  setDeletePersonErrorId(null)
-                                }}
-                                className="rounded p-1 text-muted-foreground transition-colors hover:text-destructive"
-                                aria-label={`Eliminar a ${person.name}`}
-                              >
-                                <Trash2 className="size-4" />
-                              </button>
-                            </span>
+                              <DropdownMenuContent align="end" className="w-40">
+                                <DropdownMenuItem onClick={() => handleStartEditPerson(person)}>
+                                  <Pencil className="size-4" />
+                                  Editar
+                                </DropdownMenuItem>
+
+                                <DropdownMenuItem
+                                  variant="destructive"
+                                  onClick={() => {
+                                    setPersonToDelete(person)
+                                    setDeletePersonError("")
+                                    setDeletePersonErrorId(null)
+                                  }}
+                                >
+                                  <Trash2 className="size-4" />
+                                  Eliminar
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </Badge>
                         )}
                       </div>
@@ -550,7 +564,8 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
 
                       return (
                         <Collapsible key={expense.id} className="rounded-lg border">
-                          <CollapsibleTrigger className="group flex w-full items-center justify-between p-4 text-left hover:bg-muted/50">
+                          <div className="flex items-center">
+                          <CollapsibleTrigger className="group flex min-w-0 flex-1 items-center justify-between rounded-l-lg p-4 text-left hover:bg-muted/50">
                             <div className="min-w-0">
                               <p className="font-medium">{expense.description}</p>
 
@@ -567,6 +582,36 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
                               <ChevronDown className="size-4 transition-transform group-data-panel-open:rotate-180" />
                             </div>
                           </CollapsibleTrigger>
+
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              render={
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="mr-2 size-10 shrink-0 sm:size-8"
+                                  aria-label={`Opciones de ${expense.description}`}
+                                  title="Opciones"
+                                />
+                              }
+                            >
+                              <EllipsisVertical className="size-4" />
+                            </DropdownMenuTrigger>
+
+                            <DropdownMenuContent align="end" className="w-40">
+                              <DropdownMenuItem onClick={() => setExpenseToEdit(expense)}>
+                                <Pencil className="size-4" />
+                                Editar
+                              </DropdownMenuItem>
+
+                              <DropdownMenuItem variant="destructive" onClick={() => setExpenseToDelete(expense)}>
+                                <Trash2 className="size-4" />
+                                Eliminar
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          </div>
 
                           <CollapsibleContent>
                             <div className="border-t px-4 py-4">
@@ -604,20 +649,6 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
                                   })}
                                 </div>
                               </div>
-
-                              <div className="mt-4 flex justify-end gap-2">
-                                <AddExpenseDialog
-                                  people={trip.people}
-                                  expense={expense}
-                                  onAdd={() => { }}
-                                  onUpdate={handleUpdateExpense}
-                                />
-
-                                <Button variant="destructive" onClick={() => setExpenseToDelete(expense)}>
-                                  <Trash2 />
-                                  Eliminar
-                                </Button>
-                              </div>
                             </div>
                           </CollapsibleContent>
                         </Collapsible>
@@ -653,9 +684,11 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="relative order-first bg-gradient-to-br from-violet-50 via-white to-violet-100 ring-2 ring-violet-300/70 lg:order-none">
+            <Drip color="#a78bfa" className="h-16 w-28" />
+
             <CardHeader>
-              <CardTitle>¿Quién le debe a quién?</CardTitle>
+              <CardTitle className="text-xl text-[#4a2a8f]">¿Quién le debe a quién?</CardTitle>
             </CardHeader>
 
             <CardContent>
@@ -664,6 +697,22 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
           </Card>
         </div>
       </div>
+      {expenseToEdit && (
+        <AddExpenseDialog
+          key={expenseToEdit.id}
+          people={trip.people}
+          expense={expenseToEdit}
+          open
+          onOpenChange={(nextOpen) => {
+            if (!nextOpen) {
+              setExpenseToEdit(null)
+            }
+          }}
+          onAdd={() => {}}
+          onUpdate={handleUpdateExpense}
+        />
+      )}
+
       <DeleteAlertDialog
         open={!!expenseToDelete}
         title="¿Eliminar éste gasto?"
