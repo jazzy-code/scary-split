@@ -1,8 +1,7 @@
 import { BadgeCheck, Hourglass } from "lucide-react"
 
-import { Drip } from "@/components/trips/drip"
 import { TripCard } from "@/components/trips/trip-card"
-import { getPendingSettlements, isTripSettled } from "@/lib/expenses/is-trip-settled"
+import { isTripSettled } from "@/lib/expenses/is-trip-settled"
 import type { Trip } from "@/lib/expenses/types"
 import { formatNumber } from "@/lib/utils"
 
@@ -19,10 +18,6 @@ export function TripsSection({ trips, onDelete }: TripsSectionProps) {
   const pendingTrips = trips.filter((trip) => !isTripSettled(trip))
   const settledTrips = trips.filter(isTripSettled)
 
-  const amountToSettle = pendingTrips.reduce(
-    (total, trip) => total + getPendingSettlements(trip).reduce((sum, settlement) => sum + settlement.amount, 0),
-    0
-  )
   const totalSpent = trips.reduce((total, trip) => total + getTotalSpent(trip), 0)
 
   const stats = [
@@ -34,22 +29,6 @@ export function TripsSection({ trips, onDelete }: TripsSectionProps) {
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-3 gap-3">
-        {/* <div className="relative col-span-3 overflow-hidden rounded-2xl bg-gradient-to-br from-[#24124d] via-[#4a2a8f] to-[#8b5cf6] px-5 py-4 text-white shadow-md ring-1 ring-black/10">
-          <Drip color="#c4b5fd" className="h-14 w-24" />
-
-          <p className="text-xs text-white/75">Por saldar</p>
-
-          <p className="font-heading text-3xl font-extrabold tracking-tight text-amber-300">
-            ${formatNumber(amountToSettle)}
-          </p>
-
-          <p className="text-xs text-white/75">
-            {pendingTrips.length === 0
-              ? "¡Estás al día!"
-              : `en ${pendingTrips.length} ${pendingTrips.length === 1 ? "sustito pendiente" : "sustitos pendientes"}`}
-          </p>
-        </div> */}
-
         {stats.map((stat) => (
           <div key={stat.label} className="rounded-2xl bg-card px-4 py-3 shadow-sm ring-1 ring-foreground/10">
             <p className="text-xs text-muted-foreground">{stat.label}</p>
