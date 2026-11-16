@@ -1,5 +1,6 @@
 import { BadgeCheck, Crown } from "lucide-react"
 
+import { Tip } from "@/components/ui/tip"
 import type { Person } from "@/lib/expenses/types"
 
 export function PersonStatus({ person, isViewer }: { person: Person; isViewer: boolean }) {
@@ -10,15 +11,20 @@ export function PersonStatus({ person, isViewer }: { person: Person; isViewer: b
       )}
 
       {person.memberRole === "OWNER" && (
-        <span title="Dueño del sustito" aria-label="Dueño del sustito">
-          <Crown className="size-3.5 text-amber-500" />
-        </span>
+        // tabIndex permite abrir el tooltip con el teclado o al tocar en móvil
+        <Tip label="Dueño: administra el sustito e invita a otros">
+          <span tabIndex={0} role="img" aria-label="Dueño del sustito" className="cursor-help outline-none">
+            <Crown className="size-3.5 text-amber-500" />
+          </span>
+        </Tip>
       )}
 
       {person.linked && (
-        <span title="Cuenta vinculada" aria-label="Cuenta vinculada">
-          <BadgeCheck className="size-3.5 text-emerald-500" />
-        </span>
+        <Tip label="Cuenta vinculada: ya se unió con su cuenta">
+          <span tabIndex={0} role="img" aria-label="Cuenta vinculada" className="cursor-help outline-none">
+            <BadgeCheck className="size-3.5 text-emerald-500" />
+          </span>
+        </Tip>
       )}
     </>
   )

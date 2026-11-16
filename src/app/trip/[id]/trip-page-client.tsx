@@ -366,24 +366,23 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
   return (
     <main className="min-h-screen px-4 py-4 md:px-8 md:py-8">
       <div className="w-full">
-        <div className="mb-1">
+        <div className="mb-1 flex items-center justify-between gap-2">
           <Button nativeButton={false} variant="ghost" render={<Link href="/" />}>
             <ArrowLeft className="mr-2 size-4" />
             Volver
           </Button>
+
+          {trip.viewer.role === "MEMBER" && (
+            <Button variant="ghost" size="sm" onClick={() => setLeaveOpen(true)}>
+              <LogOut className="mr-2 size-4" />
+              Salir del sustito
+            </Button>
+          )}
         </div>
 
         <div className="mb-8 ">
           <div className="flex items-end justify-between gap-4 mb-2">
             <p className="ml-1 text-md text-muted-foreground">Sustito</p>
-            <div className="flex items-center gap-2">
-            {trip.viewer.role === "MEMBER" && (
-              <Button variant="ghost" size="sm" onClick={() => setLeaveOpen(true)}>
-                <LogOut className="mr-2 size-4" />
-                Salir del sustito
-              </Button>
-            )}
-
             {session && (
               <Button variant="outline" size="sm" onClick={handleShareTrip}>
                 {shareCopied ? (
@@ -399,16 +398,16 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
                 )}
               </Button>
             )}
-            </div>
-
           </div>
 
           <div className="flex items-center">
             <Image src="/scary-split-logo.png" alt="Logo" width={40} height={40} />
 
-            <h1 className="ml-1 text-3xl font-bold tracking-tight">{trip.name}</h1>
+            <div className="ml-1 flex min-w-0 flex-col items-start gap-1.5">
+              <h1 className="text-3xl font-bold tracking-tight">{trip.name}</h1>
 
-            {isTripSettled(trip) && <SettledBadge className="ml-3" />}
+              {isTripSettled(trip) && <SettledBadge />}
+            </div>
           </div>
         </div>
 

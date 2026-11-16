@@ -31,7 +31,7 @@ export function Topbar() {
           <Link href="/" className="flex items-center">
             <Image src="/scary-split-logo.png" alt="Scary Split" width={32} height={32} />
 
-            <span className="ml-2 text-lg font-semibold">Scary Split</span>
+            <span className="ml-2 font-heading text-xl font-bold tracking-tight">Scary Split</span>
           </Link>
 
           {!isPending && (
