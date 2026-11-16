@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input"
 import { AddExpenseDialog } from "@/components/expenses/add-expense-dialog"
 import type { Expense, Payment, Settlement, Trip } from "@/lib/expenses/types"
 import { calculateBalances } from "@/lib/expenses/calculate-balances"
-import { simplifyDebts } from "@/lib/expenses/simplify-debts"
+import { calculateSettlements } from "@/lib/expenses/calculate-settlements"
 import { BalanceSummary } from "@/components/settlements/balance-summary"
 import { SettlementList } from "@/components/settlements/settlement-list"
 import { ExpenseSummary } from "@/components/settlements/expense-summary"
@@ -361,7 +361,7 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
   const totalSpent = trip.expenses.reduce((total, expense) => total + expense.amount, 0)
   const theme = getTripTheme(totalSpent)
   const balances = calculateBalances(trip.people, trip.expenses, trip.payments)
-  const settlements = simplifyDebts(balances)
+  const settlements = calculateSettlements(trip.people, trip.expenses, trip.payments)
 
   return (
     <main className="min-h-screen px-4 py-4 md:px-8 md:py-8">
