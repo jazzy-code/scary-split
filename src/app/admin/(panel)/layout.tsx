@@ -2,6 +2,7 @@ import Image from "next/image"
 import { LogOut } from "lucide-react"
 
 import { AdminNav } from "@/components/admin/admin-nav"
+import { ChangePasswordDialog } from "@/components/admin/change-password-dialog"
 import { Button } from "@/components/ui/button"
 import { logoutAdminAction } from "@/features/admin/auth-actions"
 import { requireAdmin } from "@/lib/admin/session"
@@ -22,6 +23,8 @@ export default async function AdminPanelLayout({ children }: LayoutProps<"/admin
 
         <div className="flex items-center gap-3">
           <span className="hidden text-sm text-white/80 sm:inline">{admin.email}</span>
+
+          <ChangePasswordDialog />
 
           <form action={logoutAdminAction}>
             <Button type="submit" variant="ghost" size="sm" className="text-white hover:bg-white/15 hover:text-white">
