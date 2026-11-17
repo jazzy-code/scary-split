@@ -5,6 +5,8 @@ import { usePathname, useRouter } from "next/navigation"
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Loader2, Search, X } from "lucide-react"
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table"
 
+import { formatDateTime } from "@/components/admin/format"
+import { UserDetailDialog } from "@/components/admin/user-detail-dialog"
 import { UserAvatar } from "@/components/profile/user-avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -13,13 +15,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { PAGE_SIZES, type AdminUserRow, type UsersPage, type UsersQuery } from "@/features/admin/users-query"
 import { cn } from "@/lib/utils"
-
-const dateFormatter = new Intl.DateTimeFormat("es-MX", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  // Zona fija para que servidor y navegador muestren lo mismo
-  timeZone: "America/Mexico_City"
-})
 
 const providerLabels: Record<string, string> = { credential: "Correo y contraseña", google: "Google" }
 
@@ -35,10 +30,6 @@ const column = createColumnHelper<AdminUserRow>()
 
 type SortKey = UsersQuery["sort"]
 
-function formatDate(value: string | null) {
-  return value ? dateFormatter.format(new Date(value)) : "Nunca"
-}
-
 function CountBadge({ count, label, className }: { count: number; label: string; className: string }) {
   return (
     <Badge variant="secondary" className={cn(count === 0 ? "text-muted-foreground" : className)}>
@@ -53,6 +44,7 @@ export function UsersTable({ data }: { data: UsersPage }) {
   const pathname = usePathname()
   const [pending, startTransition] = useTransition()
   const [search, setSearch] = useState(query.q ?? "")
+  const [selectedUser, setSelectedUser] = useState<AdminUserRow | null>(null)
   const debounce = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   function navigate(changes: Partial<UsersQuery>, resetPage = true) {
@@ -143,11 +135,11 @@ export function UsersTable({ data }: { data: UsersPage }) {
       }),
       column.accessor("createdAt", {
         header: () => sortableHeader("createdAt", "Registrado"),
-        cell: ({ getValue }) => formatDate(getValue())
+        cell: ({ getValue }) => formatDateTime(getValue())
       }),
       column.accessor("lastLoginAt", {
         header: () => sortableHeader("lastLoginAt", "Última sesión"),
-        cell: ({ getValue }) => formatDate(getValue())
+        cell: ({ getValue }) => formatDateTime(getValue())
       }),
       column.display({
         id: "trips",
@@ -268,7 +260,20 @@ export function UsersTable({ data }: { data: UsersPage }) {
               </TableRow>
             ) : (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow
+                  key={row.id}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Ver detalle de ${row.original.name}`}
+                  className="cursor-pointer outline-none focus-visible:bg-muted/50"
+                  onClick={() => setSelectedUser(row.original)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault()
+                      setSelectedUser(row.original)
+                    }
+                  }}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                   ))}
@@ -331,6 +336,8 @@ export function UsersTable({ data }: { data: UsersPage }) {
           </Button>
         </div>
       </div>
+
+      <UserDetailDialog user={selectedUser} onClose={() => setSelectedUser(null)} />
     </div>
   )
 }
