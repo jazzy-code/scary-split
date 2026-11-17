@@ -17,6 +17,11 @@ enum TripMemberRole {
   MEMBER
 }
 
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+}
+
 enum ExpenseSplitType {
   EQUAL
   CUSTOM
@@ -28,6 +33,7 @@ model User {
   email         String
   emailVerified Boolean             @default(false)
   image         String?
+  lastLoginAt   DateTime?
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
   sessions      Session[]
@@ -211,4 +217,35 @@ model PersonInvite {
 
   @@index([personId])
   @@map("person_invite")
+}
+
+model AdminUser {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  name         String
+  passwordHash String
+  role         AdminRole      @default(ADMIN)
+  active       Boolean        @default(true)
+  failedLogins Int            @default(0)
+  lockedUntil  DateTime?
+  lastLoginAt  DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  sessions     AdminSession[]
+
+  @@map("admin_user")
+}
+
+model AdminSession {
+  id        String    @id @default(cuid())
+  adminId   String
+  tokenHash String    @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime  @default(now())
+  admin     AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@map("admin_session")
 }

@@ -29,6 +29,16 @@ export const auth = betterAuth({
       await sendEmail({ to: user.email, ...resetPasswordEmail({ name: user.name, url }) })
     }
   },
+  databaseHooks: {
+    session: {
+      create: {
+        // Las sesiones se borran al cerrar sesión o expirar, así que la última sesión se guarda aparte
+        after: async (session) => {
+          await prisma.user.update({ where: { id: session.userId }, data: { lastLoginAt: new Date() } })
+        }
+      }
+    }
+  },
   user: {
     deleteUser: {
       enabled: true,

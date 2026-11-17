@@ -8,11 +8,18 @@ import { AuthDialog } from "@/components/auth/auth-dialog"
 import { UserMenu } from "@/components/auth/user-menu"
 import { authClient } from "@/lib/auth-client"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 
 export function Topbar() {
   const [authOpen, setAuthOpen] = useState(false)
   const [authMode, setAuthMode] = useState<"login" | "register">("login")
   const { data: session, isPending } = authClient.useSession()
+  const pathname = usePathname()
+
+  // El panel de administración tiene su propia barra
+  if (pathname.startsWith("/admin")) {
+    return null
+  }
 
   function openLogin() {
     setAuthMode("login")

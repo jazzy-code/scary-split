@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 import type { Expense, Person } from "@/lib/expenses/types"
 
@@ -231,19 +232,23 @@ export function AddExpenseDialog({
             <div className="space-y-2">
               <Label>¿Quién pagó?</Label>
 
-              <select
-                className="h-10 w-full rounded-md border bg-background px-3"
-                value={paidBy}
-                onChange={(event) => setPaidBy(event.target.value)}
+              <Select
+                items={people.map((person) => ({ value: person.id, label: person.name }))}
+                value={paidBy || null}
+                onValueChange={(value) => setPaidBy(value ?? "")}
               >
-                <option value="">Selecciona una persona</option>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecciona una persona" />
+                </SelectTrigger>
 
-                {people.map((person) => (
-                  <option key={person.id} value={person.id}>
-                    {person.name}
-                  </option>
-                ))}
-              </select>
+                <SelectContent>
+                  {people.map((person) => (
+                    <SelectItem key={person.id} value={person.id}>
+                      {person.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-3">
