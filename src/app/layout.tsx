@@ -24,12 +24,15 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Scary Split",
   description: "Divide los gastos de tu Sustito entre tus amigos sin complicarte",
+  // Evita que Chrome ofrezca traducir la página o la traduzca sola
+  other: { google: "notranslate" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="en"
+      lang="es"
+      translate="no"
       className={`${geistSans.variable} ${geistMono.variable} ${fredoka.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
