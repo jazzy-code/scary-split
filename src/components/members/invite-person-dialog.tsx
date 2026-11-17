@@ -137,12 +137,12 @@ function InviteForm({ tripId, person, onClose }: { tripId: string; person: Perso
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row">
-        <Button type="button" variant="outline" className="flex-1" disabled={pending !== null} onClick={handleCopy}>
+        <Button type="button" variant="outline" className="w-full sm:w-auto sm:flex-1" disabled={pending !== null} onClick={handleCopy}>
           {pending === "copy" ? <Loader2 className="animate-spin" /> : <Link2 />}
           Copiar enlace
         </Button>
 
-        <Button type="button" className="flex-1" disabled={pending !== null} onClick={handleSendEmail}>
+        <Button type="button" className="w-full sm:w-auto sm:flex-1" disabled={pending !== null} onClick={handleSendEmail}>
           {pending === "email" ? <Loader2 className="animate-spin" /> : <Mail />}
           Enviar por correo
         </Button>
