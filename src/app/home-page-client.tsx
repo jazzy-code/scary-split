@@ -17,6 +17,7 @@ import { createTripAction, deleteTripAction } from "@/features/trips/actions"
 import { createTripSchema } from "@/features/trips/validations"
 import { authClient } from "@/lib/auth-client"
 import type { Trip } from "@/lib/expenses/types"
+import { HomeFaq } from "@/components/home/home-faq"
 import { HomeHero } from "@/components/home/home-hero"
 import { TripsSection } from "@/components/home/trips-section"
 import { DeleteAlertDialog } from "@/components/alert-dialogs/delete-alert-dialog"
@@ -404,6 +405,8 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
               )}
             </section>
           </div>
+
+          <HomeFaq />
         </div>
       </main>
 
@@ -413,7 +416,7 @@ export default function HomePageClient({ trips }: HomePageClientProps) {
         description={
           tripToDelete ? (
             <>
-              Se eliminará el sustito <b>{`"${tripToDelete.name}"`}</b>. Ésta acción no se puede deshacer.
+              Se eliminará el sustito <b>{`"${tripToDelete.name}"`}</b>. Esta acción no se puede deshacer.
             </>
           ) : (
             "Esta acción no se puede deshacer."

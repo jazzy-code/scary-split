@@ -24,9 +24,14 @@ export function HomeHero() {
 
       <div className="relative max-w-2xl">
         <div className="flex items-center gap-3">
-          <Image src="/scary-split-logo.png" alt="Logo" width={64} height={64} priority />
+          <Image src="/scary-split-logo.png" alt="Logo de Scary Split" width={64} height={64} priority />
 
-          <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Scary Split</h1>
+          <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
+            Scary Split
+            <span className="block text-base font-medium tracking-normal text-white/85 md:text-lg">
+              Divide gastos entre amigos
+            </span>
+          </h1>
         </div>
 
         <h2 className="mt-5 text-xl font-semibold text-amber-300 md:text-2xl">
@@ -35,7 +40,7 @@ export function HomeHero() {
 
         <p className="mt-2 text-base text-white/85 md:text-lg">
           Que el lunes no te asuste el sustito de gastos. Anota lo que se gastó en tu viaje, fiesta o salida y deja que
-          Scary Split calcule cuánto le toca a cada quien, así es más fácil saber qué se pago y cuánto se debe.
+          Scary Split calcule cuánto le toca a cada quien, así es más fácil saber qué se pagó y cuánto se debe.
         </p>
       </div>
 

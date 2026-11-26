@@ -5,7 +5,8 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
 export const metadata: Metadata = {
-  title: "No pudimos iniciar sesión | Scary Split"
+  title: "No pudimos iniciar sesión",
+  robots: { index: false, follow: false }
 }
 
 type AuthErrorPageProps = {

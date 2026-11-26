@@ -6,7 +6,8 @@ import { getProfileAction } from "@/features/profile/actions"
 import ProfilePageClient from "./profile-page-client"
 
 export const metadata: Metadata = {
-  title: "Mi perfil | Scary Split"
+  title: "Mi perfil",
+  robots: { index: false, follow: false }
 }
 
 export default async function ProfilePage() {

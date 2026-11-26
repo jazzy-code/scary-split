@@ -401,7 +401,7 @@ export default function TripPageClient({ trip, shareToken }: TripPageClientProps
           </div>
 
           <div className="flex items-center">
-            <Image src="/scary-split-logo.png" alt="Logo" width={40} height={40} />
+            <Image src="/scary-split-logo.png" alt="" width={40} height={40} />
 
             <div className="ml-1 flex min-w-0 flex-col items-start gap-1.5">
               <h1 className="text-3xl font-bold tracking-tight">{trip.name}</h1>

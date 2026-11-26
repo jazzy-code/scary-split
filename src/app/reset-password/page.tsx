@@ -6,7 +6,8 @@ import { ResetPasswordForm } from "@/components/auth/reset-password-form"
 import { Button } from "@/components/ui/button"
 
 export const metadata: Metadata = {
-  title: "Restablecer contraseña | Scary Split"
+  title: "Restablecer contraseña",
+  robots: { index: false, follow: false }
 }
 
 type ResetPasswordPageProps = {

@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Scary Split · Admin",
+  title: { absolute: "Scary Split · Admin" },
   robots: { index: false, follow: false }
 }
 

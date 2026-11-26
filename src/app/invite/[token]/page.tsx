@@ -6,7 +6,9 @@ import { getCurrentSession } from "@/lib/auth-utils"
 import InviteClient from "./invite-client"
 
 export const metadata: Metadata = {
-  title: "Invitación | Scary Split"
+  title: "Invitación",
+  description: "Te invitaron a un sustito en Scary Split. Únete para ver los gastos y cuánto debes o te deben.",
+  robots: { index: false, follow: false }
 }
 
 type InvitePageProps = {
