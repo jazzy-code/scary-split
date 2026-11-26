@@ -1,3 +1,6 @@
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
+overrides:
+  # GHSA-7589-6fvf-x4pw: @prisma/config fija effect 3.20.0. Quitar cuando Prisma lo actualice.
+  '@prisma/config>effect': ^3.22.5
